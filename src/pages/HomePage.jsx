@@ -44,7 +44,10 @@ function HomePage() {
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('th-TH', {
+    if (!dateString) return '—'
+    const d = new Date(dateString)
+    if (isNaN(d.getTime())) return '—'
+    return d.toLocaleDateString('th-TH', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

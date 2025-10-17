@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import AddPromotionPage from './pages/AddPromotionPage'
 import EditPromotionPage from './pages/EditPromotionPage'
+import PromotionDetailPage from './pages/PromotionDetailPage'
 import TestPromotionPage from './pages/TestPromotionPage'
 import './App.css'
 
@@ -26,6 +27,7 @@ function App() {
               <Route path="/add-promotion" element={<AddPromotionPage />} />
               <Route path="/edit-promotion/:id" element={<EditPromotionPage />} />
               <Route path="/test-promotion" element={<TestPromotionPage />} />
+              <Route path="/promotion/:id" element={<PromotionDetailPage />} />
             </Routes>
         </main>
       </div>
