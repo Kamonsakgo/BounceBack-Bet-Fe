@@ -1,8 +1,14 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './PromotionCard.css'
 
 function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const navigate = useNavigate()
+
+  const handleEdit = () => {
+    navigate(`/edit-promotion/${promotion.id}`)
+  }
 
   const getSettingsInfo = (settings, promotionType) => {
     if (!settings) return "ไม่มีข้อมูลการตั้งค่า"
@@ -41,6 +47,13 @@ function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }
           {getStatusBadge(promotion.is_active)}
         </div>
         <div className="card-actions">
+          <button 
+            className="edit-btn"
+            onClick={handleEdit}
+            title="แก้ไขโปรโมชั่น"
+          >
+            ✏️
+          </button>
           <button 
             className="expand-btn"
             onClick={() => setIsExpanded(!isExpanded)}

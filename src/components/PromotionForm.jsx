@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import apiService from '../services/api'
 import './PromotionForm.css'
 
-function PromotionForm({ type, onSubmit }) {
+function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
   const [formData, setFormData] = useState({
     name: '',
     is_active: 1,
@@ -22,8 +22,58 @@ function PromotionForm({ type, onSubmit }) {
     }
   })
 
+  // Load initial data when component mounts or initialData changes
+  useEffect(() => {
+    if (initialData) {
+      // Format dates for datetime-local inputs
+      const formatDateForInput = (dateString) => {
+        if (!dateString) return ''
+        const date = new Date(dateString)
+        return date.toISOString().slice(0, 16) // Format: YYYY-MM-DDTHH:MM
+      }
+
+      // Parse settings if it's a JSON string
+      let parsedSettings = {}
+      if (initialData.settings) {
+        if (typeof initialData.settings === 'string') {
+          try {
+            parsedSettings = JSON.parse(initialData.settings)
+          } catch (e) {
+            console.error('Failed to parse settings:', e)
+            parsedSettings = {}
+          }
+        } else {
+          parsedSettings = initialData.settings
+        }
+      }
+
+      const newFormData = {
+        ...initialData,
+        starts_at: formatDateForInput(initialData.starts_at),
+        ends_at: formatDateForInput(initialData.ends_at),
+        schedule_start_time: initialData.schedule_start_time || '',
+        schedule_end_time: initialData.schedule_end_time || '',
+        schedule_days: initialData.schedule_days || [],
+        // Parse settings properly
+        settings: {
+          betting_types: [],
+          ...parsedSettings
+        }
+      }
+      
+      console.log('Loading initial data:', {
+        original: initialData,
+        parsed: newFormData,
+        settings: parsedSettings
+      })
+      
+      setFormData(newFormData)
+    }
+  }, [initialData])
+
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isScheduleExpanded, setIsScheduleExpanded] = useState(!!initialData?.schedule_days?.length || !!initialData?.schedule_start_time || !!initialData?.schedule_end_time)
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -118,14 +168,6 @@ function PromotionForm({ type, onSubmit }) {
       newErrors.name = 'กรุณากรอกชื่อโปรโมชั่น'
     }
     
-    if (!formData.starts_at) {
-      newErrors.starts_at = 'กรุณาเลือกวันที่เริ่มต้น'
-    }
-    
-    if (!formData.ends_at) {
-      newErrors.ends_at = 'กรุณาเลือกวันที่สิ้นสุด'
-    }
-    
     if (formData.starts_at && formData.ends_at && new Date(formData.starts_at) >= new Date(formData.ends_at)) {
       newErrors.ends_at = 'วันที่สิ้นสุดต้องอยู่หลังวันที่เริ่มต้น'
     }
@@ -180,9 +222,9 @@ function PromotionForm({ type, onSubmit }) {
       const submitData = {
         ...formData,
         type: type,
-        settings: {
+        settings: JSON.stringify({
           ...formData.settings
-        }
+        })
       }
 
       // Convert empty strings to null for optional fields
@@ -193,8 +235,14 @@ function PromotionForm({ type, onSubmit }) {
         ])
       )
 
-      const response = await apiService.createPromotion(cleanedData)
-      console.log('Promotion created successfully:', response)
+      let response
+      if (isEdit) {
+        response = await apiService.updatePromotion(cleanedData.id, cleanedData)
+        console.log('Promotion updated successfully:', response)
+      } else {
+        response = await apiService.createPromotion(cleanedData)
+        console.log('Promotion created successfully:', response)
+      }
       
       // Call the parent onSubmit callback
       onSubmit(response)
@@ -486,32 +534,127 @@ function PromotionForm({ type, onSubmit }) {
           </div>
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="starts_at">วันที่เริ่มต้น *</label>
-            <input
-              type="datetime-local"
-              id="starts_at"
-              name="starts_at"
-              value={formData.starts_at}
-              onChange={handleInputChange}
-              className={errors.starts_at ? 'error' : ''}
-            />
-            {errors.starts_at && <span className="error-text">{errors.starts_at}</span>}
+        <div className="form-section schedule-section">
+          <div className="schedule-header" onClick={() => setIsScheduleExpanded(!isScheduleExpanded)}>
+            <h3>⏰ ตารางเวลาโปรโมชั่น</h3>
+            <button type="button" className="toggle-btn">
+              {isScheduleExpanded ? '−' : '+'}
+            </button>
           </div>
           
-          <div className="form-group">
-            <label htmlFor="ends_at">วันที่สิ้นสุด *</label>
-            <input
-              type="datetime-local"
-              id="ends_at"
-              name="ends_at"
-              value={formData.ends_at}
-              onChange={handleInputChange}
-              className={errors.ends_at ? 'error' : ''}
-            />
-            {errors.ends_at && <span className="error-text">{errors.ends_at}</span>}
+          {isScheduleExpanded && (
+            <>
+              <p className="section-note">
+                💡 หมายเหตุ: หากไม่ระบุจะใช้งานทุกวัน เริ่มทุกเวลา
+              </p>
+              
+              <div className="schedule-container">
+            <div className="schedule-group">
+              <h4>📅 วันที่เริ่มต้นและสิ้นสุด</h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="starts_at">วันที่เริ่มต้น</label>
+                  <input
+                    type="datetime-local"
+                    id="starts_at"
+                    name="starts_at"
+                    value={formData.starts_at}
+                    onChange={handleInputChange}
+                    className={errors.starts_at ? 'error' : ''}
+                    placeholder="dd/mm/yyyy, --:--"
+                  />
+                  {errors.starts_at && <span className="error-text">{errors.starts_at}</span>}
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="ends_at">วันที่สิ้นสุด</label>
+                  <input
+                    type="datetime-local"
+                    id="ends_at"
+                    name="ends_at"
+                    value={formData.ends_at}
+                    onChange={handleInputChange}
+                    className={errors.ends_at ? 'error' : ''}
+                    placeholder="dd/mm/yyyy, --:--"
+                  />
+                  {errors.ends_at && <span className="error-text">{errors.ends_at}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="schedule-group">
+              <h4>📅 วันในสัปดาห์ที่ใช้งาน</h4>
+              <div className="schedule-days">
+                {[
+                  { value: 1, label: 'จันทร์', short: 'จ' },
+                  { value: 2, label: 'อังคาร', short: 'อ' },
+                  { value: 3, label: 'พุธ', short: 'พ' },
+                  { value: 4, label: 'พฤหัสบดี', short: 'พฤ' },
+                  { value: 5, label: 'ศุกร์', short: 'ศ' },
+                  { value: 6, label: 'เสาร์', short: 'ส' },
+                  { value: 7, label: 'อาทิตย์', short: 'อา' }
+                ].map(day => (
+                  <label key={day.value} className="schedule-day-item">
+                    <input
+                      type="checkbox"
+                      checked={formData.schedule_days?.includes(day.value) || false}
+                      onChange={(e) => {
+                        const currentDays = formData.schedule_days || []
+                        let newDays
+                        if (e.target.checked) {
+                          newDays = [...currentDays, day.value]
+                        } else {
+                          newDays = currentDays.filter(d => d !== day.value)
+                        }
+                        setFormData(prev => ({
+                          ...prev,
+                          schedule_days: newDays
+                        }))
+                      }}
+                    />
+                    <span className="day-label">
+                      <span className="day-short">{day.short}</span>
+                      <span className="day-full">{day.label}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            <div className="schedule-group">
+              <h4>🕐 ช่วงเวลาการใช้งาน</h4>
+              <div className="time-range">
+                <div className="form-group">
+                  <label htmlFor="schedule_start_time">เวลาเริ่มต้น</label>
+                  <input
+                    type="time"
+                    id="schedule_start_time"
+                    name="schedule_start_time"
+                    value={formData.schedule_start_time || ''}
+                    onChange={handleInputChange}
+                    placeholder="เช่น 09:00"
+                  />
+                </div>
+                
+                <div className="time-separator">
+                  <span>ถึง</span>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="schedule_end_time">เวลาสิ้นสุด</label>
+                  <input
+                    type="time"
+                    id="schedule_end_time"
+                    name="schedule_end_time"
+                    value={formData.schedule_end_time || ''}
+                    onChange={handleInputChange}
+                    placeholder="เช่น 18:00"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
+            </>
+          )}
         </div>
 
         <div className="form-row">
@@ -700,7 +843,7 @@ function PromotionForm({ type, onSubmit }) {
           className="submit-btn"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'กำลังสร้าง...' : 'สร้างโปรโมชั่น'}
+          {isSubmitting ? (isEdit ? 'กำลังแก้ไข...' : 'กำลังสร้าง...') : (isEdit ? 'แก้ไขโปรโมชั่น' : 'สร้างโปรโมชั่น')}
         </button>
         <button 
           type="button" 
