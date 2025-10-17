@@ -448,6 +448,18 @@ function TestPromotionPage() {
                       <p><strong>สถานะ:</strong> {testResult.payout.success ? 'สำเร็จ' : 'ไม่สำเร็จ'}</p>
                       <p><strong>จำนวนจ่าย:</strong> {testResult.payout.payout || 0} บาท</p>
                       <p><strong>รหัสรายการ:</strong> {testResult.payout.transaction_id || '-'}</p>
+                      {(testResult.payout.reasons && testResult.payout.reasons.length > 0) && (
+                        <div style={{ marginTop: '8px' }}>
+                          <h4>เหตุผลการจ่ายไม่สำเร็จ</h4>
+                          <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                            {testResult.payout.reasons.map((reason, index) => (
+                              <li key={index} style={{ color: '#dc2626', marginBottom: '4px' }}>
+                                {reason}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
