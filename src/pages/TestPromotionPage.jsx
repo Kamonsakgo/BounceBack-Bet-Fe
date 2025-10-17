@@ -10,6 +10,7 @@ function TestPromotionPage() {
   const [testData, setTestData] = useState({
     stake: '',
     promotion_id: '',
+    user_id: '',
     selections: [
       { sport: 'football', result: 'lose', market: 'handicap', period: 'full_time', odds: 1.9 }
     ]
@@ -93,14 +94,19 @@ function TestPromotionPage() {
     setTestResult(null)
 
     try {
-      const response = await apiService.testPromotion({
+      const payload = {
         stake: parseFloat(testData.stake),
         promotion_id: parseInt(testData.promotion_id),
         selections: testData.selections.map(selection => ({
           ...selection,
           odds: parseFloat(selection.odds)
         }))
-      })
+      }
+      if (testData.user_id) {
+        payload.user_id = isNaN(Number(testData.user_id)) ? testData.user_id : Number(testData.user_id)
+      }
+
+      const response = await apiService.testPromotion(payload)
       
       setTestResult(response)
     } catch (err) {
@@ -216,6 +222,16 @@ function TestPromotionPage() {
 
             <div className="form-section">
               <h3>ข้อมูลการเดิมพัน</h3>
+              <div className="form-group">
+                <label>ผู้ใช้ (user_id)</label>
+                <input
+                  type="text"
+                  name="user_id"
+                  value={testData.user_id}
+                  onChange={handleInputChange}
+                  placeholder="เช่น 123 หรือ user_abc"
+                />
+              </div>
               <div className="form-group">
                 <label>จำนวนเงินเดิมพัน (บาท)</label>
                 <input
@@ -335,45 +351,82 @@ function TestPromotionPage() {
             {testResult && (
               <div className="test-result">
                 <h3>📊 ผลการทดสอบ</h3>
+                {(() => { return null })()}
+                {(() => { /* derive evaluation/payout views */ return null })()}
+                {(() => { /* spacer */ return null })()}
+                {(() => { return null })()}
+                {(() => { return null })()}
                 <div className="result-content">
                   <div className="result-section">
                     <h4>ข้อมูลโปรโมชั่น</h4>
-                    <p><strong>ID:</strong> {testResult.promotion?.id || 'ไม่ระบุ'}</p>
-                    <p><strong>ชื่อ:</strong> {testResult.promotion?.name || 'ไม่ระบุ'}</p>
-                    <p><strong>ประเภท:</strong> {getPromotionTypeName(testResult.promotion?.type)}</p>
+                    {(() => {
+                      const evalRes = testResult.evaluation || testResult
+                      const promo = evalRes.promotion || testResult.promotion
+                      return (
+                        <>
+                          <p><strong>ID:</strong> {promo?.id || 'ไม่ระบุ'}</p>
+                          <p><strong>ชื่อ:</strong> {promo?.name || 'ไม่ระบุ'}</p>
+                          <p><strong>ประเภท:</strong> {getPromotionTypeName(promo?.type)}</p>
+                        </>
+                      )
+                    })()}
                   </div>
 
                   <div className="result-section">
                     <h4>การคำนวณ</h4>
-                    <p><strong>เงินเดิมพัน:</strong> {testResult.stake} บาท</p>
-                    <p><strong>จำนวนการเดิมพัน:</strong> {testData.selections.length} รายการ</p>
-                    <p><strong>จำนวนคู่ที่ส่ง:</strong> {testResult.selectionsCount || 0} คู่</p>
-                    <p><strong>ตัวคูณ:</strong> {testResult.multiplier || 0}x</p>
-                    <p><strong>สถานะ:</strong> {testResult.eligible ? 'ผ่านเงื่อนไข' : 'ไม่ผ่านเงื่อนไข'}</p>
+                    {(() => {
+                      const evalRes = testResult.evaluation || testResult
+                      const isPassed = Boolean(evalRes?.eligible) && (!evalRes?.reasons || evalRes.reasons.length === 0)
+                      return (
+                        <>
+                          <p><strong>เงินเดิมพัน:</strong> {evalRes.stake ?? testResult.stake} บาท</p>
+                          <p><strong>จำนวนการเดิมพัน:</strong> {testData.selections.length} รายการ</p>
+                          <p><strong>จำนวนคู่ที่ส่ง:</strong> {evalRes.selectionsCount || 0} คู่</p>
+                          <p><strong>ตัวคูณ:</strong> {evalRes.multiplier || 0}x</p>
+                          <p><strong>สถานะ:</strong> {isPassed ? 'ผ่านเงื่อนไข' : 'ไม่ผ่านเงื่อนไข'}</p>
+                        </>
+                      )
+                    })()}
                   </div>
 
                   <div className="result-section">
                     <h4>ผลลัพธ์</h4>
-                    <p><strong>ผ่านเงื่อนไข:</strong> {testResult.eligible ? '✅ ผ่าน' : '❌ ไม่ผ่าน'}</p>
-                    <p><strong>โบนัสที่ได้รับ:</strong> {testResult.bonus_amount || ((testResult.cappedRefund || 0) - testResult.stake < 0 ? testResult.cappedRefund || 0 : (testResult.cappedRefund || 0) - testResult.stake)} บาท</p>
-                    <p><strong>เงินคืนที่คำนวณ:</strong> {testResult.computedRefund || 0} บาท</p>
-                    <p><strong>เงินคืนที่จ่ายจริง:</strong> {testResult.cappedRefund || 0} บาท</p>
+                    {(() => {
+                      const evalRes = testResult.evaluation || testResult
+                      const isPassed = Boolean(evalRes?.eligible) && (!evalRes?.reasons || evalRes.reasons.length === 0)
+                      const stake = evalRes.stake ?? 0
+                      const computedRefund = evalRes.computedRefund || 0
+                      const cappedRefund = evalRes.cappedRefund || 0
+                      const bonus = evalRes.bonus_amount || ((cappedRefund - stake) < 0 ? cappedRefund : (cappedRefund - stake))
+                      return (
+                        <>
+                          <p><strong>ผ่านเงื่อนไข:</strong> {isPassed ? '✅ ผ่าน' : '❌ ไม่ผ่าน'}</p>
+                          <p><strong>โบนัสที่ได้รับ:</strong> {bonus} บาท</p>
+                          <p><strong>เงินคืนที่คำนวณ:</strong> {computedRefund} บาท</p>
+                          <p><strong>เงินคืนที่จ่ายจริง:</strong> {cappedRefund} บาท</p>
+                        </>
+                      )
+                    })()}
                   </div>
 
-                  {testResult.caps && (
+                  {(testResult.evaluation?.caps || testResult.caps) && (
                     <div className="result-section">
                       <h4>ขีดจำกัด</h4>
-                      <p><strong>สูงสุดต่อบิล:</strong> {testResult.caps.maxPayoutPerBill ? `${testResult.caps.maxPayoutPerBill} บาท` : 'ไม่จำกัด'}</p>
-                      <p><strong>สูงสุดต่อวัน:</strong> {testResult.caps.maxPayoutPerDay ? `${testResult.caps.maxPayoutPerDay} บาท` : 'ไม่จำกัด'}</p>
-                      <p><strong>สูงสุดต่อผู้ใช้:</strong> {testResult.caps.maxPayoutPerUser ? `${testResult.caps.maxPayoutPerUser} บาท` : 'ไม่จำกัด'}</p>
+                      {(() => { const caps = testResult.evaluation?.caps || testResult.caps || {}; return (
+                        <>
+                          <p><strong>สูงสุดต่อบิล:</strong> {caps.maxPayoutPerBill ? `${caps.maxPayoutPerBill} บาท` : 'ไม่จำกัด'}</p>
+                          <p><strong>สูงสุดต่อวัน:</strong> {caps.maxPayoutPerDay ? `${caps.maxPayoutPerDay} บาท` : 'ไม่จำกัด'}</p>
+                          <p><strong>สูงสุดต่อผู้ใช้:</strong> {caps.maxPayoutPerUser ? `${caps.maxPayoutPerUser} บาท` : 'ไม่จำกัด'}</p>
+                        </>
+                      ) })()}
                     </div>
                   )}
 
-                  {testResult.reasons && testResult.reasons.length > 0 && (
+                  {(testResult.evaluation?.reasons || testResult.reasons)?.length > 0 && (
                     <div className="result-section">
                       <h4>❌ เหตุผลที่ไม่ผ่าน</h4>
                       <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                        {testResult.reasons.map((reason, index) => (
+                        {(testResult.evaluation?.reasons || testResult.reasons).map((reason, index) => (
                           <li key={index} style={{ color: '#dc2626', marginBottom: '4px' }}>
                             {reason}
                           </li>
@@ -386,6 +439,15 @@ function TestPromotionPage() {
                     <div className="result-message">
                       <h4>ข้อความ</h4>
                       <p>{testResult.message}</p>
+                    </div>
+                  )}
+
+                  {testResult.payout && (
+                    <div className="result-section">
+                      <h4>การจ่ายเงิน (Payout)</h4>
+                      <p><strong>สถานะ:</strong> {testResult.payout.success ? 'สำเร็จ' : 'ไม่สำเร็จ'}</p>
+                      <p><strong>จำนวนจ่าย:</strong> {testResult.payout.payout || 0} บาท</p>
+                      <p><strong>รหัสรายการ:</strong> {testResult.payout.transaction_id || '-'}</p>
                     </div>
                   )}
                 </div>
