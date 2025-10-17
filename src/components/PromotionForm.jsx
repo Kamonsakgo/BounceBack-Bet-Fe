@@ -53,7 +53,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
         ends_at: formatDateForInput(initialData.ends_at),
         schedule_start_time: initialData.schedule_start_time || '',
         schedule_end_time: initialData.schedule_end_time || '',
-        schedule_days: initialData.schedule_days || [],
+        schedule_days: Array.isArray(initialData.schedule_days) ? initialData.schedule_days : [],
         // Parse settings properly
         settings: {
           betting_types: [],
@@ -61,11 +61,6 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
         }
       }
       
-      console.log('Loading initial data:', {
-        original: initialData,
-        parsed: newFormData,
-        settings: parsedSettings
-      })
       
       setFormData(newFormData)
     }
@@ -235,13 +230,21 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
         ])
       )
 
+      // Ensure schedule_days is properly formatted as array
+      if (cleanedData.schedule_days && Array.isArray(cleanedData.schedule_days)) {
+        cleanedData.schedule_days = cleanedData.schedule_days.filter(day => 
+          typeof day === 'number' && day >= 1 && day <= 7
+        )
+      } else if (cleanedData.schedule_days === null || cleanedData.schedule_days === '') {
+        cleanedData.schedule_days = null
+      }
+
+
       let response
       if (isEdit) {
         response = await apiService.updatePromotion(cleanedData.id, cleanedData)
-        console.log('Promotion updated successfully:', response)
       } else {
         response = await apiService.createPromotion(cleanedData)
-        console.log('Promotion created successfully:', response)
       }
       
       // Call the parent onSubmit callback
@@ -598,7 +601,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                       type="checkbox"
                       checked={formData.schedule_days?.includes(day.value) || false}
                       onChange={(e) => {
-                        const currentDays = formData.schedule_days || []
+                        const currentDays = Array.isArray(formData.schedule_days) ? formData.schedule_days : []
                         let newDays
                         if (e.target.checked) {
                           newDays = [...currentDays, day.value]
