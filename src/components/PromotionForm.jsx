@@ -384,13 +384,27 @@ function PromotionForm({ type, onSubmit }) {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="min_loss_per_pair">เงินเสียขั้นต่ำต่อคู่ (บาท)</label>
+                <label htmlFor="min_odds">อัตราต่อรองขั้นต่ำ</label>
                 <input
                   type="number"
-                  id="min_loss_per_pair"
+                  id="min_odds"
+                  min="1"
+                  step="0.01"
+                  value={formData.settings.min_odds || ''}
+                  onChange={(e) => handleSettingsChange('min_odds', parseFloat(e.target.value))}
+                  placeholder="เช่น 1.5"
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="min_stake">ยอดเดิมพันขั้นต่ำ</label>
+                <input
+                  type="number"
+                  id="min_stake"
                   min="0"
-                  value={formData.settings.min_loss_per_pair || ''}
-                  onChange={(e) => handleSettingsChange('min_loss_per_pair', parseFloat(e.target.value))}
+                  value={formData.settings.min_stake || ''}
+                  onChange={(e) => handleSettingsChange('min_stake', parseFloat(e.target.value))}
                   placeholder="เช่น 50 บาท"
                 />
               </div>
