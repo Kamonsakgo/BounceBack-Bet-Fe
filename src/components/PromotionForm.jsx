@@ -18,7 +18,8 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
     max_payout_per_day: '',
     max_payout_per_user: '',
     settings: {
-      betting_types: []
+      betting_types: [],
+      market_types: []
     }
   })
 
@@ -57,7 +58,12 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
         // Parse settings properly
         settings: {
           betting_types: [],
-          ...parsedSettings
+          ...parsedSettings,
+          market_types: Array.isArray(parsedSettings.market_types)
+            ? parsedSettings.market_types
+            : parsedSettings.market_type
+              ? [parsedSettings.market_type]
+              : []
         }
       }
       
@@ -171,6 +177,8 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
       newErrors.priority = 'ความสำคัญต้องอยู่ระหว่าง 1-100'
     }
     
+    // ถ้าไม่เลือกประเภทตลาดใดๆ จะตีความว่าใช้ได้ทั้งหมด (ไม่ต้อง error)
+    
     if (!formData.settings.betting_types || formData.settings.betting_types.length === 0) {
       newErrors.betting_types = 'กรุณาเลือกประเภทการเดิมพันที่ใช้ได้'
     }
@@ -214,20 +222,46 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
     setIsSubmitting(true)
     
     try {
+      // Clean settings to remove empty values
+      const cleanedSettings = Object.fromEntries(
+        Object.entries(formData.settings)
+          .filter(([key, value]) => {
+            if (value === '' || value === null || value === undefined) return false
+            if (Array.isArray(value) && value.length === 0) return false
+            if (typeof value === 'object' && Object.keys(value).length === 0) return false
+            return true
+          })
+      )
+
       const submitData = {
         ...formData,
         type: type,
         settings: JSON.stringify({
-          ...formData.settings
+          ...cleanedSettings,
+          market_types: (formData.settings.market_types && formData.settings.market_types.length > 0)
+            ? formData.settings.market_types
+            : ['all']
         })
       }
 
-      // Convert empty strings to null for optional fields
+      // Convert empty strings to null for optional fields and filter out empty values
       const cleanedData = Object.fromEntries(
-        Object.entries(submitData).map(([key, value]) => [
-          key,
-          value === '' ? null : value
-        ])
+        Object.entries(submitData)
+          .filter(([key, value]) => {
+            // Keep non-empty values
+            if (value !== '' && value !== null && value !== undefined) {
+              return true
+            }
+            // Keep specific fields that should be sent even if empty
+            if (['id', 'type', 'is_active', 'priority', 'is_stackable'].includes(key)) {
+              return true
+            }
+            return false
+          })
+          .map(([key, value]) => [
+            key,
+            value === '' ? null : value
+          ])
       )
 
       // Ensure schedule_days is properly formatted as array
@@ -534,6 +568,64 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
               className={errors.priority ? 'error' : ''}
             />
             {errors.priority && <span className="error-text">{errors.priority}</span>}
+          </div>
+        </div>
+        
+        <div className="form-row">
+          <div className="form-group">
+            <label>ประเภทตลาด (เลือกได้หลายอัน)</label>
+            <div className="betting-types">
+              {[
+                { key: 'all', label: 'ทั้งหมด' },
+                { key: 'handicap', label: 'Handicap' },
+                { key: 'over_under', label: 'Over/Under' },
+                { key: '1x2', label: '1X2' }
+              ].map(opt => (
+                <label key={opt.key} className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.settings.market_types?.includes(opt.key) || false}
+                    onChange={(e) => {
+                      const current = formData.settings.market_types || []
+                      let next
+                      if (opt.key === 'all') {
+                        next = e.target.checked ? ['all'] : []
+                      } else {
+                        const withoutAll = current.filter(v => v !== 'all')
+                        next = e.target.checked
+                          ? [...withoutAll, opt.key]
+                          : withoutAll.filter(v => v !== opt.key)
+                      }
+                      handleSettingsChange('market_types', next)
+                    }}
+                  />
+                  <span className="checkbox-text">{opt.label}</span>
+                </label>
+              ))}
+            </div>
+            {errors.market_types && <span className="error-text">{errors.market_types}</span>}
+            {Array.isArray(formData.settings.market_types) && (
+              <div style={{ marginTop: '8px' }}>
+                <span style={{ color: '#fff', opacity: 0.9 }}>เลือกแล้ว: </span>
+                {formData.settings.market_types.length === 0 ? (
+                  <span style={{ color: '#ffd700' }}>— ไม่เลือก (จะส่งเป็น ['all'] ตอนบันทึก)</span>
+                ) : (
+                  formData.settings.market_types.map(mt => (
+                    <span key={mt} style={{
+                      display: 'inline-block',
+                      background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(184, 134, 11, 0.1))',
+                      border: '1px solid rgba(255, 215, 0, 0.4)',
+                      color: '#fff',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      marginRight: '8px',
+                      marginTop: '6px',
+                      fontSize: '0.85rem'
+                    }}>{mt}</span>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
 

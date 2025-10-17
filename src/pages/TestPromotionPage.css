@@ -349,11 +349,12 @@
 }
 
 .test-result {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.06), rgba(184, 134, 11, 0.03));
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 10px;
+  padding: 22px;
   margin-top: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 215, 0, 0.08);
 }
 
 .test-result h3 {
@@ -370,39 +371,42 @@
 }
 
 .result-section {
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(184, 134, 11, 0.02));
   padding: 16px;
-  border-radius: 6px;
-  border: 1px solid #e0f2fe;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 215, 0, 0.06);
 }
 
 .result-section h4 {
   color: #ffffff;
   margin: 0 0 12px 0;
   font-size: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.25);
   padding-bottom: 8px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .result-section p {
-  color: #6b7280;
+  color: #e5e7eb;
   margin: 6px 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .result-section strong {
-  color: #374151;
-  font-weight: 600;
+  color: #ffd700;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.35);
 }
 
 .result-message {
   grid-column: 1 / -1;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid #fbbf24;
-  border-radius: 6px;
-  padding: 12px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(184, 134, 11, 0.02));
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 8px;
+  padding: 14px;
   margin-top: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 215, 0, 0.08);
 }
 
 .result-message h4 {
@@ -413,9 +417,10 @@
 }
 
 .result-message p {
-  color: #92400e;
+  color: #fff;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .loading-container,
