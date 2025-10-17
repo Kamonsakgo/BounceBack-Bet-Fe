@@ -48,13 +48,29 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
         }
       }
 
+      // Parse and normalize schedule_days (may arrive as JSON string)
+      let parsedScheduleDays = []
+      if (Array.isArray(initialData.schedule_days)) {
+        parsedScheduleDays = initialData.schedule_days
+      } else if (typeof initialData.schedule_days === 'string') {
+        try {
+          const arr = JSON.parse(initialData.schedule_days)
+          if (Array.isArray(arr)) parsedScheduleDays = arr
+        } catch {
+          parsedScheduleDays = []
+        }
+      }
+      parsedScheduleDays = (parsedScheduleDays || [])
+        .map(v => typeof v === 'string' ? parseInt(v, 10) : v)
+        .filter(v => Number.isInteger(v) && v >= 1 && v <= 7)
+
       const newFormData = {
         ...initialData,
         starts_at: formatDateForInput(initialData.starts_at),
         ends_at: formatDateForInput(initialData.ends_at),
         schedule_start_time: initialData.schedule_start_time || '',
         schedule_end_time: initialData.schedule_end_time || '',
-        schedule_days: Array.isArray(initialData.schedule_days) ? initialData.schedule_days : [],
+        schedule_days: parsedScheduleDays,
         // Parse settings properly
         settings: {
           betting_types: [],
@@ -69,6 +85,9 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
       
       
       setFormData(newFormData)
+      if ((parsedScheduleDays && parsedScheduleDays.length > 0) || initialData.schedule_start_time || initialData.schedule_end_time) {
+        setIsScheduleExpanded(true)
+      }
     }
   }, [initialData])
 
