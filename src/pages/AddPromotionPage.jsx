@@ -10,44 +10,51 @@ function AddPromotionPage() {
   const promotionTypes = [
     {
       id: 'welcome_bonus',
-      name: 'Welcome Bonus',
-      description: 'Bonus for new users',
+      name: 'โบนัสต้อนรับ',
+      description: 'โบนัสสำหรับผู้ใช้ใหม่',
       icon: '🎁',
       color: '#4ade80'
     },
     {
       id: 'cashback',
-      name: 'Cashback',
-      description: 'Return percentage of losses',
+      name: 'คืนเงิน',
+      description: 'คืนเปอร์เซ็นต์ของเงินที่เสีย',
       icon: '💰',
       color: '#3b82f6'
     },
     {
       id: 'weekend_bonus',
-      name: 'Weekend Bonus',
-      description: 'Special weekend promotions',
+      name: 'โบนัสสุดสัปดาห์',
+      description: 'โปรโมชั่นพิเศษวันหยุด',
       icon: '🎉',
       color: '#f59e0b'
     },
     {
       id: 'deposit_bonus',
-      name: 'Deposit Bonus',
-      description: 'Bonus on deposits',
+      name: 'โบนัสฝากเงิน',
+      description: 'โบนัสจากการฝากเงิน',
       icon: '💳',
       color: '#8b5cf6'
     },
     {
       id: 'referral_bonus',
-      name: 'Referral Bonus',
-      description: 'Reward for referring friends',
+      name: 'โบนัสแนะนำเพื่อน',
+      description: 'รางวัลจากการแนะนำเพื่อน',
       icon: '👥',
       color: '#ef4444'
+    },
+    {
+      id: 'lose_all_refund',
+      name: 'แพ้ทุกคู่คืนเงิน',
+      description: 'คืนเงินเมื่อแพ้ทุกคู่เดิมพัน',
+      icon: '🔄',
+      color: '#10b981'
     }
   ]
 
   const handleSubmit = (response) => {
     console.log('Promotion created successfully:', response)
-    alert('Promotion created successfully!')
+    alert('สร้างโปรโมชั่นสำเร็จ!')
     navigate('/')
   }
 
@@ -58,14 +65,14 @@ function AddPromotionPage() {
           className="back-btn"
           onClick={() => navigate('/')}
         >
-          ← Back to Promotions
+          ← กลับไปยังโปรโมชั่น
         </button>
-        <h2>Add New Promotion</h2>
-        <p>Choose a promotion type and configure the settings</p>
+        <h2>เพิ่มโปรโมชั่นใหม่</h2>
+        <p>เลือกประเภทโปรโมชั่นและกำหนดการตั้งค่า</p>
       </div>
 
       <div className="promotion-type-selector">
-        <h3>Select Promotion Type</h3>
+        <h3>เลือกประเภทโปรโมชั่น</h3>
         <div className="type-grid">
           {promotionTypes.map(type => (
             <div

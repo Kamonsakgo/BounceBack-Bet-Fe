@@ -95,16 +95,16 @@ class ApiService {
     }
   }
 
-  // Test promotion evaluation (if you have this endpoint)
-  async testPromotion(promotionId, testData) {
+  // Test promotion evaluation
+  async testPromotion(testData) {
     try {
-      const response = await this.request(`${API_CONFIG.ENDPOINTS.PROMOTION_TEST}/${promotionId}`, {
+      const response = await this.request('/api/promotion/evaluate', {
         method: 'POST',
         body: JSON.stringify(testData),
       })
       return response
     } catch (error) {
-      console.error(`Failed to test promotion ${promotionId}:`, error)
+      console.error('Failed to test promotion:', error)
       throw error
     }
   }

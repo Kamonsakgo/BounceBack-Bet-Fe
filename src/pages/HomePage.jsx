@@ -65,7 +65,7 @@ function HomePage() {
       <div className="homepage">
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Loading promotions...</p>
+          <p>กำลังโหลดโปรโมชั่น...</p>
         </div>
       </div>
     )
@@ -76,13 +76,13 @@ function HomePage() {
       <div className="homepage">
         <div className="error-container">
           <div className="error-icon">⚠️</div>
-          <h3>Error Loading Promotions</h3>
+          <h3>เกิดข้อผิดพลาดในการโหลดโปรโมชั่น</h3>
           <p>{error}</p>
           <button 
             className="retry-btn"
             onClick={() => window.location.reload()}
           >
-            Retry
+            ลองใหม่
           </button>
         </div>
       </div>
@@ -93,39 +93,39 @@ function HomePage() {
     <div className="homepage">
       <div className="homepage-header">
         <div className="header-content">
-          <h2>Promotion Management</h2>
-          <p>Manage your betting promotions and bonuses</p>
+          <h2>จัดการโปรโมชั่น</h2>
+          <p>จัดการโปรโมชั่นและโบนัสการเดิมพันของคุณ</p>
         </div>
         <Link to="/add-promotion" className="add-promotion-btn">
-          <span>+</span> Add New Promotion
+          <span>+</span> เพิ่มโปรโมชั่นใหม่
         </Link>
       </div>
 
       <div className="filters">
         <div className="filter-group">
-          <label>Filter by status:</label>
+          <label>กรองตามสถานะ:</label>
           <select 
             value={filter} 
             onChange={(e) => setFilter(e.target.value)}
             className="filter-select"
           >
-            <option value="all">All Promotions</option>
-            <option value="active">Active Only</option>
-            <option value="inactive">Inactive Only</option>
+            <option value="all">โปรโมชั่นทั้งหมด</option>
+            <option value="active">ใช้งานอยู่</option>
+            <option value="inactive">ไม่ใช้งาน</option>
           </select>
         </div>
         <div className="stats-summary">
           <div className="stat-item">
             <span className="stat-number">{promotions.length}</span>
-            <span className="stat-label">Total</span>
+            <span className="stat-label">ทั้งหมด</span>
           </div>
           <div className="stat-item">
             <span className="stat-number">{promotions.filter(p => p.is_active === 1).length}</span>
-            <span className="stat-label">Active</span>
+            <span className="stat-label">ใช้งาน</span>
           </div>
           <div className="stat-item">
             <span className="stat-number">{promotions.filter(p => p.is_active === 0).length}</span>
-            <span className="stat-label">Inactive</span>
+            <span className="stat-label">ไม่ใช้งาน</span>
           </div>
         </div>
       </div>
@@ -134,10 +134,10 @@ function HomePage() {
         {filteredPromotions.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📊</div>
-            <h3>No promotions found</h3>
-            <p>Create your first promotion to get started</p>
+            <h3>ไม่พบโปรโมชั่น</h3>
+            <p>สร้างโปรโมชั่นแรกของคุณเพื่อเริ่มต้น</p>
             <Link to="/add-promotion" className="empty-cta">
-              Add Promotion
+              เพิ่มโปรโมชั่น
             </Link>
           </div>
         ) : (

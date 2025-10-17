@@ -4,19 +4,26 @@ import './PromotionCard.css'
 function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }) {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  const getSettingsInfo = (settings) => {
-    if (!settings) return "No settings"
+  const getSettingsInfo = (settings, promotionType) => {
+    if (!settings) return "ไม่มีข้อมูลการตั้งค่า"
     
-    const type = settings.type || 'unknown'
-    switch (type) {
+    switch (promotionType) {
       case 'welcome_bonus':
-        return `Welcome Bonus: ${settings.bonus_percentage}%`
+        return `โบนัสต้อนรับ: ${settings.bonus_percentage}%`
       case 'cashback':
-        return `Cashback: ${settings.cashback_percentage}%`
+        return `คืนเงิน: ${settings.cashback_percentage}%`
       case 'weekend_bonus':
-        return `Weekend Bonus: ${settings.bonus_multiplier}x multiplier`
+        return `โบนัสสุดสัปดาห์: ${settings.bonus_multiplier}x ตัวคูณ`
+      case 'lose_all_refund':
+        if (settings.tiers && settings.tiers.length > 0) {
+          const tierTexts = settings.tiers.map(tier => 
+            `${tier.pairs} คู่ = ${tier.multiplier}x`
+          ).join(', ')
+          return `แพ้ทุกคู่คืนเงิน: ${tierTexts}`
+        }
+        return `แพ้ทุกคู่คืนเงิน: เสีย ${settings.required_loss_pairs || 0} คู่ ได้คืน ${settings.refund_amount || 0} บาท`
       default:
-        return `Type: ${type}`
+        return `ประเภท: ${promotionType}`
     }
   }
 
@@ -46,7 +53,7 @@ function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }
       <div className="card-content">
         <div className="basic-info">
           <div className="info-row">
-            <span className="label">Priority:</span>
+            <span className="label">ความสำคัญ:</span>
             <span 
               className="priority-badge"
               style={{ backgroundColor: getPriorityColor(promotion.priority) }}
@@ -55,13 +62,13 @@ function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }
             </span>
           </div>
           <div className="info-row">
-            <span className="label">Stackable:</span>
+            <span className="label">รวมกันได้:</span>
             <span className={`stackable-badge ${promotion.is_stackable ? 'yes' : 'no'}`}>
-              {promotion.is_stackable ? 'Yes' : 'No'}
+              {promotion.is_stackable ? 'ใช่' : 'ไม่'}
             </span>
           </div>
           <div className="info-row">
-            <span className="label">Period:</span>
+            <span className="label">ระยะเวลา:</span>
             <span className="period">
               {formatDate(promotion.starts_at)} - {formatDate(promotion.ends_at)}
             </span>
@@ -71,67 +78,87 @@ function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }
         {isExpanded && (
           <div className="expanded-info">
             <div className="info-section">
-              <h4>User Limits</h4>
+              <h4>ขีดจำกัดผู้ใช้</h4>
               <div className="info-grid">
                 <div className="info-item">
-                  <span className="label">Total per user:</span>
-                  <span>{promotion.user_limit_total || 'Unlimited'}</span>
+                  <span className="label">รวมต่อผู้ใช้:</span>
+                  <span>{promotion.user_limit_total || 'ไม่จำกัด'}</span>
                 </div>
                 <div className="info-item">
-                  <span className="label">Per day per user:</span>
-                  <span>{promotion.user_limit_per_day || 'Unlimited'}</span>
+                  <span className="label">ต่อวันต่อผู้ใช้:</span>
+                  <span>{promotion.user_limit_per_day || 'ไม่จำกัด'}</span>
                 </div>
               </div>
             </div>
 
             <div className="info-section">
-              <h4>Global Limits</h4>
+              <h4>ขีดจำกัดรวม</h4>
               <div className="info-grid">
                 <div className="info-item">
-                  <span className="label">Global quota:</span>
-                  <span>{promotion.global_quota?.toLocaleString() || 'Unlimited'}</span>
+                  <span className="label">โควต้าทั้งหมด:</span>
+                  <span>{promotion.global_quota?.toLocaleString() || 'ไม่จำกัด'}</span>
                 </div>
                 <div className="info-item">
-                  <span className="label">Global budget:</span>
-                  <span>{promotion.global_budget ? formatCurrency(promotion.global_budget) : 'Unlimited'}</span>
+                  <span className="label">งบประมาณรวม:</span>
+                  <span>{promotion.global_budget ? formatCurrency(promotion.global_budget) : 'ไม่จำกัด'}</span>
                 </div>
               </div>
             </div>
 
             <div className="info-section">
-              <h4>Payout Limits</h4>
+              <h4>ขีดจำกัดการจ่าย</h4>
               <div className="info-grid">
                 <div className="info-item">
-                  <span className="label">Max per bill:</span>
-                  <span>{promotion.max_payout_per_bill ? formatCurrency(promotion.max_payout_per_bill) : 'Unlimited'}</span>
+                  <span className="label">สูงสุดต่อบิล:</span>
+                  <span>{promotion.max_payout_per_bill ? formatCurrency(promotion.max_payout_per_bill) : 'ไม่จำกัด'}</span>
                 </div>
                 <div className="info-item">
-                  <span className="label">Max per day:</span>
-                  <span>{promotion.max_payout_per_day ? formatCurrency(promotion.max_payout_per_day) : 'Unlimited'}</span>
+                  <span className="label">สูงสุดต่อวัน:</span>
+                  <span>{promotion.max_payout_per_day ? formatCurrency(promotion.max_payout_per_day) : 'ไม่จำกัด'}</span>
                 </div>
                 <div className="info-item">
-                  <span className="label">Max per user:</span>
-                  <span>{promotion.max_payout_per_user ? formatCurrency(promotion.max_payout_per_user) : 'Unlimited'}</span>
+                  <span className="label">สูงสุดต่อผู้ใช้:</span>
+                  <span>{promotion.max_payout_per_user ? formatCurrency(promotion.max_payout_per_user) : 'ไม่จำกัด'}</span>
                 </div>
               </div>
             </div>
 
             <div className="info-section">
-              <h4>Settings</h4>
+              <h4>การตั้งค่า</h4>
               <div className="settings-info">
-                {getSettingsInfo(promotion.settings)}
+                {getSettingsInfo(promotion.settings, promotion.type)}
               </div>
             </div>
 
+            {promotion.settings?.betting_types && promotion.settings.betting_types.length > 0 && (
+              <div className="info-section">
+                <h4>ประเภทการเดิมพัน</h4>
+                <div className="betting-types-display">
+                  {promotion.settings.betting_types.map(type => {
+                    const typeInfo = {
+                      'football': '⚽ ฟุตบอล',
+                      'boxing': '🥊 มวย',
+                      'all': '🎯 ทั้งหมด'
+                    }
+                    return (
+                      <span key={type} className="betting-type-tag">
+                        {typeInfo[type] || type}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="info-section">
-              <h4>Timestamps</h4>
+              <h4>เวลาสร้างและแก้ไข</h4>
               <div className="info-grid">
                 <div className="info-item">
-                  <span className="label">Created:</span>
+                  <span className="label">สร้างเมื่อ:</span>
                   <span>{formatDate(promotion.created_at)}</span>
                 </div>
                 <div className="info-item">
-                  <span className="label">Updated:</span>
+                  <span className="label">แก้ไขเมื่อ:</span>
                   <span>{formatDate(promotion.updated_at)}</span>
                 </div>
               </div>

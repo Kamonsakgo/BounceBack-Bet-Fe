@@ -17,7 +17,9 @@ function PromotionForm({ type, onSubmit }) {
     max_payout_per_bill: '',
     max_payout_per_day: '',
     max_payout_per_user: '',
-    settings: {}
+    settings: {
+      betting_types: []
+    }
   })
 
   const [errors, setErrors] = useState({})
@@ -49,36 +51,116 @@ function PromotionForm({ type, onSubmit }) {
     }))
   }
 
+  const addTier = () => {
+    const newTier = { pairs: '', multiplier: '' }
+    setFormData(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        tiers: [...(prev.settings.tiers || []), newTier]
+      }
+    }))
+  }
+
+  const removeTier = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        tiers: prev.settings.tiers?.filter((_, i) => i !== index) || []
+      }
+    }))
+  }
+
+  const updateTier = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        tiers: prev.settings.tiers?.map((tier, i) => 
+          i === index ? { ...tier, [field]: value } : tier
+        ) || []
+      }
+    }))
+  }
+
+  const handleBettingTypeChange = (bettingType, checked) => {
+    setFormData(prev => {
+      const currentTypes = prev.settings.betting_types || []
+      let newTypes
+      
+      if (bettingType === 'all') {
+        // If "all" is selected, clear other selections
+        newTypes = checked ? ['all'] : []
+      } else {
+        // If specific type is selected, remove "all" and add/remove the type
+        if (checked) {
+          newTypes = currentTypes.filter(t => t !== 'all').concat([bettingType])
+        } else {
+          newTypes = currentTypes.filter(t => t !== bettingType)
+        }
+      }
+      
+      return {
+        ...prev,
+        settings: {
+          ...prev.settings,
+          betting_types: newTypes
+        }
+      }
+    })
+  }
+
   const validateForm = () => {
     const newErrors = {}
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Promotion name is required'
+      newErrors.name = 'กรุณากรอกชื่อโปรโมชั่น'
     }
     
     if (!formData.starts_at) {
-      newErrors.starts_at = 'Start date is required'
+      newErrors.starts_at = 'กรุณาเลือกวันที่เริ่มต้น'
     }
     
     if (!formData.ends_at) {
-      newErrors.ends_at = 'End date is required'
+      newErrors.ends_at = 'กรุณาเลือกวันที่สิ้นสุด'
     }
     
     if (formData.starts_at && formData.ends_at && new Date(formData.starts_at) >= new Date(formData.ends_at)) {
-      newErrors.ends_at = 'End date must be after start date'
+      newErrors.ends_at = 'วันที่สิ้นสุดต้องอยู่หลังวันที่เริ่มต้น'
     }
     
     if (formData.priority < 1 || formData.priority > 100) {
-      newErrors.priority = 'Priority must be between 1 and 100'
+      newErrors.priority = 'ความสำคัญต้องอยู่ระหว่าง 1-100'
+    }
+    
+    if (!formData.settings.betting_types || formData.settings.betting_types.length === 0) {
+      newErrors.betting_types = 'กรุณาเลือกประเภทการเดิมพันที่ใช้ได้'
     }
 
     // Type-specific validation
     if (type === 'welcome_bonus' && (!formData.settings.bonus_percentage || formData.settings.bonus_percentage < 1)) {
-      newErrors.bonus_percentage = 'Bonus percentage is required and must be at least 1%'
+      newErrors.bonus_percentage = 'กรุณากรอกเปอร์เซ็นต์โบนัสและต้องไม่น้อยกว่า 1%'
     }
     
     if (type === 'cashback' && (!formData.settings.cashback_percentage || formData.settings.cashback_percentage < 1)) {
-      newErrors.cashback_percentage = 'Cashback percentage is required and must be at least 1%'
+      newErrors.cashback_percentage = 'กรุณากรอกเปอร์เซ็นต์คืนเงินและต้องไม่น้อยกว่า 1%'
+    }
+    
+    if (type === 'lose_all_refund') {
+      const tiers = formData.settings.tiers || []
+      if (tiers.length === 0) {
+        newErrors.tiers = 'กรุณาเพิ่มระดับการคืนเงินอย่างน้อย 1 ระดับ'
+      } else {
+        tiers.forEach((tier, index) => {
+          if (!tier.pairs || tier.pairs < 1) {
+            newErrors[`tier_${index}_pairs`] = `ระดับ ${index + 1}: กรุณากรอกจำนวนคู่ที่ต้องเสีย`
+          }
+          if (!tier.multiplier || tier.multiplier < 1) {
+            newErrors[`tier_${index}_multiplier`] = `ระดับ ${index + 1}: กรุณากรอกตัวคูณการคืน`
+          }
+        })
+      }
     }
 
     setErrors(newErrors)
@@ -97,9 +179,9 @@ function PromotionForm({ type, onSubmit }) {
     try {
       const submitData = {
         ...formData,
+        type: type,
         settings: {
-          ...formData.settings,
-          type: type
+          ...formData.settings
         }
       }
 
@@ -119,7 +201,7 @@ function PromotionForm({ type, onSubmit }) {
     } catch (error) {
       console.error('Failed to create promotion:', error)
       setErrors({ 
-        submit: 'Failed to create promotion. Please try again.' 
+        submit: 'ไม่สามารถสร้างโปรโมชั่นได้ กรุณาลองใหม่อีกครั้ง' 
       })
     } finally {
       setIsSubmitting(false)
@@ -131,9 +213,9 @@ function PromotionForm({ type, onSubmit }) {
       case 'welcome_bonus':
         return (
           <div className="form-section">
-            <h3>Welcome Bonus Settings</h3>
+            <h3>การตั้งค่าโบนัสต้อนรับ</h3>
             <div className="form-group">
-              <label htmlFor="bonus_percentage">Bonus Percentage (%)</label>
+              <label htmlFor="bonus_percentage">เปอร์เซ็นต์โบนัส (%)</label>
               <input
                 type="number"
                 id="bonus_percentage"
@@ -151,9 +233,9 @@ function PromotionForm({ type, onSubmit }) {
       case 'cashback':
         return (
           <div className="form-section">
-            <h3>Cashback Settings</h3>
+            <h3>การตั้งค่าคืนเงิน</h3>
             <div className="form-group">
-              <label htmlFor="cashback_percentage">Cashback Percentage (%)</label>
+              <label htmlFor="cashback_percentage">เปอร์เซ็นต์คืนเงิน (%)</label>
               <input
                 type="number"
                 id="cashback_percentage"
@@ -171,9 +253,9 @@ function PromotionForm({ type, onSubmit }) {
       case 'weekend_bonus':
         return (
           <div className="form-section">
-            <h3>Weekend Bonus Settings</h3>
+            <h3>การตั้งค่าโบนัสสุดสัปดาห์</h3>
             <div className="form-group">
-              <label htmlFor="bonus_multiplier">Bonus Multiplier</label>
+              <label htmlFor="bonus_multiplier">ตัวคูณโบนัส</label>
               <input
                 type="number"
                 id="bonus_multiplier"
@@ -190,9 +272,9 @@ function PromotionForm({ type, onSubmit }) {
       case 'deposit_bonus':
         return (
           <div className="form-section">
-            <h3>Deposit Bonus Settings</h3>
+            <h3>การตั้งค่าโบนัสฝากเงิน</h3>
             <div className="form-group">
-              <label htmlFor="deposit_bonus_percentage">Deposit Bonus Percentage (%)</label>
+              <label htmlFor="deposit_bonus_percentage">เปอร์เซ็นต์โบนัสฝากเงิน (%)</label>
               <input
                 type="number"
                 id="deposit_bonus_percentage"
@@ -203,7 +285,7 @@ function PromotionForm({ type, onSubmit }) {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="min_deposit">Minimum Deposit Amount</label>
+              <label htmlFor="min_deposit">จำนวนเงินฝากขั้นต่ำ</label>
               <input
                 type="number"
                 id="min_deposit"
@@ -218,9 +300,9 @@ function PromotionForm({ type, onSubmit }) {
       case 'referral_bonus':
         return (
           <div className="form-section">
-            <h3>Referral Bonus Settings</h3>
+            <h3>การตั้งค่าโบนัสแนะนำเพื่อน</h3>
             <div className="form-group">
-              <label htmlFor="referral_bonus_amount">Referral Bonus Amount</label>
+              <label htmlFor="referral_bonus_amount">จำนวนโบนัสแนะนำ</label>
               <input
                 type="number"
                 id="referral_bonus_amount"
@@ -230,7 +312,7 @@ function PromotionForm({ type, onSubmit }) {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="referee_bonus_amount">Referee Bonus Amount</label>
+              <label htmlFor="referee_bonus_amount">จำนวนโบนัสผู้ถูกแนะนำ</label>
               <input
                 type="number"
                 id="referee_bonus_amount"
@@ -238,6 +320,114 @@ function PromotionForm({ type, onSubmit }) {
                 value={formData.settings.referee_bonus_amount || ''}
                 onChange={(e) => handleSettingsChange('referee_bonus_amount', parseFloat(e.target.value))}
               />
+            </div>
+          </div>
+        )
+      
+      case 'lose_all_refund':
+        return (
+          <div className="form-section">
+            <h3>การตั้งค่าแพ้ทุกคู่คืนเงิน</h3>
+            <div className="form-group">
+              <label>ระดับการคืนเงิน (Tiers)</label>
+              <div className="tiers-container">
+                {errors.tiers && <span className="error-text">{errors.tiers}</span>}
+                {formData.settings.tiers?.map((tier, index) => (
+                  <div key={index} className="tier-item">
+                    <div className="tier-header">
+                      <span className="tier-label">ระดับ {index + 1}</span>
+                      <button 
+                        type="button" 
+                        className="remove-tier-btn"
+                        onClick={() => removeTier(index)}
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                    <div className="tier-fields">
+                      <div className="form-group">
+                        <label>จำนวนคู่ที่ต้องเสีย</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={tier.pairs || ''}
+                          onChange={(e) => updateTier(index, 'pairs', parseInt(e.target.value))}
+                          placeholder="เช่น 5 คู่"
+                          className={errors[`tier_${index}_pairs`] ? 'error' : ''}
+                        />
+                        {errors[`tier_${index}_pairs`] && <span className="error-text">{errors[`tier_${index}_pairs`]}</span>}
+                      </div>
+                      <div className="form-group">
+                        <label>ตัวคูณการคืน</label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="0.1"
+                          value={tier.multiplier || ''}
+                          onChange={(e) => updateTier(index, 'multiplier', parseFloat(e.target.value))}
+                          placeholder="เช่น 2 เท่า"
+                          className={errors[`tier_${index}_multiplier`] ? 'error' : ''}
+                        />
+                        {errors[`tier_${index}_multiplier`] && <span className="error-text">{errors[`tier_${index}_multiplier`]}</span>}
+                      </div>
+                    </div>
+                  </div>
+                )) || []}
+                <button 
+                  type="button" 
+                  className="add-tier-btn"
+                  onClick={addTier}
+                >
+                  + เพิ่มระดับ
+                </button>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="min_loss_per_pair">เงินเสียขั้นต่ำต่อคู่ (บาท)</label>
+                <input
+                  type="number"
+                  id="min_loss_per_pair"
+                  min="0"
+                  value={formData.settings.min_loss_per_pair || ''}
+                  onChange={(e) => handleSettingsChange('min_loss_per_pair', parseFloat(e.target.value))}
+                  placeholder="เช่น 50 บาท"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="max_refund_amount">จำนวนเงินคืนสูงสุด (บาท)</label>
+                <input
+                  type="number"
+                  id="max_refund_amount"
+                  min="0"
+                  value={formData.settings.max_refund_amount || ''}
+                  onChange={(e) => handleSettingsChange('max_refund_amount', parseFloat(e.target.value))}
+                  placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
+                />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="refund_delay_hours">ระยะเวลาคืนเงิน (ชั่วโมง)</label>
+                <input
+                  type="number"
+                  id="refund_delay_hours"
+                  min="0"
+                  value={formData.settings.refund_delay_hours || ''}
+                  onChange={(e) => handleSettingsChange('refund_delay_hours', parseInt(e.target.value))}
+                  placeholder="เช่น 24 ชั่วโมง"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="refund_conditions">เงื่อนไขเพิ่มเติม</label>
+                <input
+                  type="text"
+                  id="refund_conditions"
+                  value={formData.settings.refund_conditions || ''}
+                  onChange={(e) => handleSettingsChange('refund_conditions', e.target.value)}
+                  placeholder="เช่น ต้องเสียติดต่อกัน"
+                />
+              </div>
             </div>
           </div>
         )
@@ -250,10 +440,10 @@ function PromotionForm({ type, onSubmit }) {
   return (
     <form onSubmit={handleSubmit} className="promotion-form">
       <div className="form-section">
-        <h3>Basic Information</h3>
+        <h3>ข้อมูลพื้นฐาน</h3>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="name">Promotion Name *</label>
+            <label htmlFor="name">ชื่อโปรโมชั่น *</label>
             <input
               type="text"
               id="name"
@@ -261,13 +451,13 @@ function PromotionForm({ type, onSubmit }) {
               value={formData.name}
               onChange={handleInputChange}
               className={errors.name ? 'error' : ''}
-              placeholder="Enter promotion name"
+              placeholder="กรอกชื่อโปรโมชั่น"
             />
             {errors.name && <span className="error-text">{errors.name}</span>}
           </div>
           
           <div className="form-group">
-            <label htmlFor="priority">Priority (1-100)</label>
+            <label htmlFor="priority">ความสำคัญ (1-100)</label>
             <input
               type="number"
               id="priority"
@@ -284,7 +474,7 @@ function PromotionForm({ type, onSubmit }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="starts_at">Start Date *</label>
+            <label htmlFor="starts_at">วันที่เริ่มต้น *</label>
             <input
               type="datetime-local"
               id="starts_at"
@@ -297,7 +487,7 @@ function PromotionForm({ type, onSubmit }) {
           </div>
           
           <div className="form-group">
-            <label htmlFor="ends_at">End Date *</label>
+            <label htmlFor="ends_at">วันที่สิ้นสุด *</label>
             <input
               type="datetime-local"
               id="ends_at"
@@ -311,6 +501,39 @@ function PromotionForm({ type, onSubmit }) {
         </div>
 
         <div className="form-row">
+          <div className="form-group">
+            <label>ประเภทการเดิมพันที่ใช้ได้</label>
+            <div className="betting-types">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.settings.betting_types?.includes('football') || false}
+                  onChange={(e) => handleBettingTypeChange('football', e.target.checked)}
+                />
+                <span className="checkbox-text">⚽ ฟุตบอล</span>
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.settings.betting_types?.includes('boxing') || false}
+                  onChange={(e) => handleBettingTypeChange('boxing', e.target.checked)}
+                />
+                <span className="checkbox-text">🥊 มวย</span>
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.settings.betting_types?.includes('all') || false}
+                  onChange={(e) => handleBettingTypeChange('all', e.target.checked)}
+                />
+                <span className="checkbox-text">🎯 ทั้งหมด</span>
+              </label>
+            </div>
+            {errors.betting_types && <span className="error-text">{errors.betting_types}</span>}
+          </div>
+        </div>
+
+        <div className="form-row">
           <div className="form-group checkbox-group">
             <label className="checkbox-label">
               <input
@@ -319,7 +542,7 @@ function PromotionForm({ type, onSubmit }) {
                 checked={formData.is_active}
                 onChange={handleInputChange}
               />
-              <span className="checkbox-text">Active</span>
+              <span className="checkbox-text">ใช้งาน</span>
             </label>
           </div>
           
@@ -331,7 +554,7 @@ function PromotionForm({ type, onSubmit }) {
                 checked={formData.is_stackable}
                 onChange={handleInputChange}
               />
-              <span className="checkbox-text">Stackable with other promotions</span>
+              <span className="checkbox-text">รวมกับโปรโมชั่นอื่นได้</span>
             </label>
           </div>
         </div>
@@ -340,10 +563,10 @@ function PromotionForm({ type, onSubmit }) {
       {getTypeSpecificFields()}
 
       <div className="form-section">
-        <h3>User Limits</h3>
+        <h3>ขีดจำกัดผู้ใช้</h3>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="user_limit_total">Total Uses per User</label>
+            <label htmlFor="user_limit_total">จำนวนครั้งรวมต่อผู้ใช้</label>
             <input
               type="number"
               id="user_limit_total"
@@ -351,12 +574,12 @@ function PromotionForm({ type, onSubmit }) {
               min="0"
               value={formData.user_limit_total}
               onChange={handleInputChange}
-              placeholder="Leave empty for unlimited"
+              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="user_limit_per_day">Uses per Day per User</label>
+            <label htmlFor="user_limit_per_day">จำนวนครั้งต่อวันต่อผู้ใช้</label>
             <input
               type="number"
               id="user_limit_per_day"
@@ -364,17 +587,17 @@ function PromotionForm({ type, onSubmit }) {
               min="0"
               value={formData.user_limit_per_day}
               onChange={handleInputChange}
-              placeholder="Leave empty for unlimited"
+              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
             />
           </div>
         </div>
       </div>
 
       <div className="form-section">
-        <h3>Global Limits</h3>
+        <h3>ขีดจำกัดรวม</h3>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="global_quota">Global Quota</label>
+            <label htmlFor="global_quota">โควต้าทั้งหมด</label>
             <input
               type="number"
               id="global_quota"
@@ -382,12 +605,12 @@ function PromotionForm({ type, onSubmit }) {
               min="0"
               value={formData.global_quota}
               onChange={handleInputChange}
-              placeholder="Leave empty for unlimited"
+              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="global_budget">Global Budget (THB)</label>
+            <label htmlFor="global_budget">งบประมาณรวม (บาท)</label>
             <input
               type="number"
               id="global_budget"
@@ -396,17 +619,17 @@ function PromotionForm({ type, onSubmit }) {
               step="0.01"
               value={formData.global_budget}
               onChange={handleInputChange}
-              placeholder="Leave empty for unlimited"
+              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
             />
           </div>
         </div>
       </div>
 
       <div className="form-section">
-        <h3>Payout Limits</h3>
+        <h3>ขีดจำกัดการจ่าย</h3>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="max_payout_per_bill">Max Payout per Bill (THB)</label>
+            <label htmlFor="max_payout_per_bill">สูงสุดต่อบิล (บาท)</label>
             <input
               type="number"
               id="max_payout_per_bill"
@@ -415,12 +638,12 @@ function PromotionForm({ type, onSubmit }) {
               step="0.01"
               value={formData.max_payout_per_bill}
               onChange={handleInputChange}
-              placeholder="Leave empty for unlimited"
+              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
             />
           </div>
           
           <div className="form-group">
-            <label htmlFor="max_payout_per_day">Max Payout per Day (THB)</label>
+            <label htmlFor="max_payout_per_day">สูงสุดต่อวัน (บาท)</label>
             <input
               type="number"
               id="max_payout_per_day"
@@ -429,14 +652,14 @@ function PromotionForm({ type, onSubmit }) {
               step="0.01"
               value={formData.max_payout_per_day}
               onChange={handleInputChange}
-              placeholder="Leave empty for unlimited"
+              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
             />
           </div>
         </div>
         
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="max_payout_per_user">Max Payout per User (THB)</label>
+            <label htmlFor="max_payout_per_user">สูงสุดต่อผู้ใช้ (บาท)</label>
             <input
               type="number"
               id="max_payout_per_user"
@@ -445,7 +668,7 @@ function PromotionForm({ type, onSubmit }) {
               step="0.01"
               value={formData.max_payout_per_user}
               onChange={handleInputChange}
-              placeholder="Leave empty for unlimited"
+              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
             />
           </div>
         </div>
@@ -463,7 +686,7 @@ function PromotionForm({ type, onSubmit }) {
           className="submit-btn"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Creating...' : 'Create Promotion'}
+          {isSubmitting ? 'กำลังสร้าง...' : 'สร้างโปรโมชั่น'}
         </button>
         <button 
           type="button" 
@@ -471,7 +694,7 @@ function PromotionForm({ type, onSubmit }) {
           onClick={() => window.history.back()}
           disabled={isSubmitting}
         >
-          Cancel
+          ยกเลิก
         </button>
       </div>
     </form>
