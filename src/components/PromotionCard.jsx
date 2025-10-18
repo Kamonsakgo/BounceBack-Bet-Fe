@@ -63,7 +63,6 @@ function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }
             <div style={{ marginTop: 6, opacity: 0.9, fontSize: '0.9em' }}>
               {minOdds ? <span style={{ marginRight: 12 }}>อัตราต่อรองขั้นต่ำ: {minOdds}</span> : null}
               {minStake ? <span style={{ marginRight: 12 }}>ยอดเดิมพันขั้นต่ำ: {minStake}</span> : null}
-              {maxRefund ? <span>เงินคืนสูงสุด: {maxRefund}</span> : null}
             </div>
           </div>
         )

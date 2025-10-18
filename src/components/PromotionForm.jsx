@@ -17,6 +17,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
     max_payout_per_bill: '',
     max_payout_per_day: '',
     max_payout_per_user: '',
+    activeTab: 'global',
     settings: {
       betting_types: [],
       market_types: []
@@ -71,6 +72,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
         schedule_start_time: initialData.schedule_start_time || '',
         schedule_end_time: initialData.schedule_end_time || '',
         schedule_days: parsedScheduleDays,
+        activeTab: 'global', // Set default tab to global for edit mode
         // Parse settings properly
         settings: {
           betting_types: [],
@@ -196,11 +198,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
       newErrors.priority = 'ความสำคัญต้องอยู่ระหว่าง 1-100'
     }
     
-    // ถ้าไม่เลือกประเภทตลาดใดๆ จะตีความว่าใช้ได้ทั้งหมด (ไม่ต้อง error)
-    
-    if (!formData.settings.betting_types || formData.settings.betting_types.length === 0) {
-      newErrors.betting_types = 'กรุณาเลือกประเภทการเดิมพันที่ใช้ได้'
-    }
+    // ถ้าไม่เลือกประเภทการเดิมพัน จะส่ง ['all'] ไปหลังบ้าน
 
     // Type-specific validation
     if (type === 'welcome_bonus' && (!formData.settings.bonus_percentage || formData.settings.bonus_percentage < 1)) {
@@ -246,6 +244,8 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
         Object.entries(formData.settings)
           .filter(([key, value]) => {
             if (value === '' || value === null || value === undefined) return false
+            // Keep match_periods even if empty (will be handled later)
+            if (key === 'match_periods') return true
             if (Array.isArray(value) && value.length === 0) return false
             if (typeof value === 'object' && Object.keys(value).length === 0) return false
             return true
@@ -255,8 +255,14 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
       const submitData = {
         ...formData,
         type: type,
+        match_periods: (formData.settings.match_periods && formData.settings.match_periods.length > 0)
+          ? formData.settings.match_periods
+          : ['all'],
         settings: JSON.stringify({
           ...cleanedSettings,
+          betting_types: (formData.settings.betting_types && formData.settings.betting_types.length > 0)
+            ? formData.settings.betting_types
+            : ['all'],
           market_types: (formData.settings.market_types && formData.settings.market_types.length > 0)
             ? formData.settings.market_types
             : ['all']
@@ -267,6 +273,10 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
       const cleanedData = Object.fromEntries(
         Object.entries(submitData)
           .filter(([key, value]) => {
+            // Remove frontend-only fields
+            if (['activeTab'].includes(key)) {
+              return false
+            }
             // Keep non-empty values
             if (value !== '' && value !== null && value !== undefined) {
               return true
@@ -512,17 +522,6 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                   placeholder="เช่น 50 บาท"
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="max_refund_amount">จำนวนเงินคืนสูงสุด (บาท)</label>
-                <input
-                  type="number"
-                  id="max_refund_amount"
-                  min="0"
-                  value={formData.settings.max_refund_amount || ''}
-                  onChange={(e) => handleSettingsChange('max_refund_amount', parseFloat(e.target.value))}
-                  placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
-                />
-              </div>
             </div>
             <div className="form-row">
               <div className="form-group">
@@ -536,7 +535,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                   placeholder="เช่น 24 ชั่วโมง"
                 />
               </div>
-              <div className="form-group">
+              {/* <div className="form-group">
                 <label htmlFor="refund_conditions">เงื่อนไขเพิ่มเติม</label>
                 <input
                   type="text"
@@ -545,7 +544,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                   onChange={(e) => handleSettingsChange('refund_conditions', e.target.value)}
                   placeholder="เช่น ต้องเสียติดต่อกัน"
                 />
-              </div>
+              </div> */}
             </div>
           </div>
         )
@@ -558,7 +557,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
   return (
     <form onSubmit={handleSubmit} className="promotion-form">
       <div className="form-section">
-        <h3>ข้อมูลพื้นฐาน</h3>
+        <h3>📝 ข้อมูลพื้นฐาน</h3>
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="name">ชื่อโปรโมชั่น *</label>
@@ -590,64 +589,6 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
           </div>
         </div>
         
-        <div className="form-row">
-          <div className="form-group">
-            <label>ประเภทตลาด (เลือกได้หลายอัน)</label>
-            <div className="betting-types">
-              {[
-                { key: 'all', label: 'ทั้งหมด' },
-                { key: 'handicap', label: 'Handicap' },
-                { key: 'over_under', label: 'Over/Under' },
-                { key: '1x2', label: '1X2' }
-              ].map(opt => (
-                <label key={opt.key} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.settings.market_types?.includes(opt.key) || false}
-                    onChange={(e) => {
-                      const current = formData.settings.market_types || []
-                      let next
-                      if (opt.key === 'all') {
-                        next = e.target.checked ? ['all'] : []
-                      } else {
-                        const withoutAll = current.filter(v => v !== 'all')
-                        next = e.target.checked
-                          ? [...withoutAll, opt.key]
-                          : withoutAll.filter(v => v !== opt.key)
-                      }
-                      handleSettingsChange('market_types', next)
-                    }}
-                  />
-                  <span className="checkbox-text">{opt.label}</span>
-                </label>
-              ))}
-            </div>
-            {errors.market_types && <span className="error-text">{errors.market_types}</span>}
-            {Array.isArray(formData.settings.market_types) && (
-              <div style={{ marginTop: '8px' }}>
-                <span style={{ color: '#fff', opacity: 0.9 }}>เลือกแล้ว: </span>
-                {formData.settings.market_types.length === 0 ? (
-                  <span style={{ color: '#ffd700' }}>— ไม่เลือก (จะส่งเป็น ['all'] ตอนบันทึก)</span>
-                ) : (
-                  formData.settings.market_types.map(mt => (
-                    <span key={mt} style={{
-                      display: 'inline-block',
-                      background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(184, 134, 11, 0.1))',
-                      border: '1px solid rgba(255, 215, 0, 0.4)',
-                      color: '#fff',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      marginRight: '8px',
-                      marginTop: '6px',
-                      fontSize: '0.85rem'
-                    }}>{mt}</span>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
         <div className="form-section schedule-section">
           <div className="schedule-header" onClick={() => setIsScheduleExpanded(!isScheduleExpanded)}>
             <h3>⏰ ตารางเวลาโปรโมชั่น</h3>
@@ -674,7 +615,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                     name="starts_at"
                     value={formData.starts_at}
                     onChange={handleInputChange}
-                    className={errors.starts_at ? 'error' : ''}
+                    className={`datetime-input ${errors.starts_at ? 'error' : ''}`}
                     placeholder="dd/mm/yyyy, --:--"
                   />
                   {errors.starts_at && <span className="error-text">{errors.starts_at}</span>}
@@ -688,11 +629,14 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                     name="ends_at"
                     value={formData.ends_at}
                     onChange={handleInputChange}
-                    className={errors.ends_at ? 'error' : ''}
+                    className={`datetime-input ${errors.ends_at ? 'error' : ''}`}
                     placeholder="dd/mm/yyyy, --:--"
                   />
                   {errors.ends_at && <span className="error-text">{errors.ends_at}</span>}
                 </div>
+              </div>
+              <div className="field-note">
+                📅 หมายเหตุ: ไม่กำหนดจะใช้ทุกวัน
               </div>
             </div>
             <div className="schedule-group">
@@ -732,12 +676,15 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                   </label>
                 ))}
               </div>
+              <div className="field-note">
+                📅 หมายเหตุ: ไม่กำหนดจะใช้ทุกวัน
+              </div>
             </div>
             
             <div className="schedule-group">
               <h4>🕐 ช่วงเวลาการใช้งาน</h4>
               <div className="time-range">
-                <div className="form-group">
+                <div className="time-input-group">
                   <label htmlFor="schedule_start_time">เวลาเริ่มต้น</label>
                   <input
                     type="time"
@@ -746,6 +693,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                     value={formData.schedule_start_time || ''}
                     onChange={handleInputChange}
                     placeholder="เช่น 09:00"
+                    className="time-input"
                   />
                 </div>
                 
@@ -753,7 +701,7 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                   <span>ถึง</span>
                 </div>
                 
-                <div className="form-group">
+                <div className="time-input-group">
                   <label htmlFor="schedule_end_time">เวลาสิ้นสุด</label>
                   <input
                     type="time"
@@ -762,8 +710,12 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
                     value={formData.schedule_end_time || ''}
                     onChange={handleInputChange}
                     placeholder="เช่น 18:00"
+                    className="time-input"
                   />
                 </div>
+              </div>
+              <div className="field-note">
+                🕐 หมายเหตุ: ไม่กำหนดจะใช้ทุกเวลา
               </div>
             </div>
           </div>
@@ -771,62 +723,215 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
           )}
         </div>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>ประเภทการเดิมพันที่ใช้ได้</label>
+        <div className="form-section">
+          <h3>🎮 ประเภทการเล่นและการเดิมพัน</h3>
+          
+          <div className="betting-section">
+            <div className="betting-group">
+              <h4>🏈 ประเภทกีฬา</h4>
+              <div className="betting-types">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.settings.betting_types?.includes('football') || false}
+                    onChange={(e) => handleBettingTypeChange('football', e.target.checked)}
+                  />
+                  <span className="checkbox-text">⚽ ฟุตบอล</span>
+                </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.settings.betting_types?.includes('boxing') || false}
+                    onChange={(e) => handleBettingTypeChange('boxing', e.target.checked)}
+                  />
+                  <span className="checkbox-text">🥊 มวย</span>
+                </label>
+              </div>
+              {errors.betting_types && <span className="error-text">{errors.betting_types}</span>}
+              {Array.isArray(formData.settings.betting_types) && (
+                <div style={{ marginTop: '8px' }}>
+                  <span style={{ color: '#fff', opacity: 0.9 }}>เลือกแล้ว: </span>
+                  {formData.settings.betting_types.length === 0 ? (
+                    <span style={{ color: '#ffd700' }}>— ไม่เลือก (จะส่งเป็น ['all'] ตอนบันทึก)</span>
+                  ) : (
+                    formData.settings.betting_types.map(bt => (
+                      <span key={bt} style={{
+                        display: 'inline-block',
+                        background: 'linear-gradient(135deg, rgba(74, 222, 128, 0.15), rgba(34, 197, 94, 0.1))',
+                        border: '1px solid rgba(74, 222, 128, 0.4)',
+                        color: '#fff',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        marginRight: '8px',
+                        marginTop: '6px',
+                        fontSize: '0.85rem'
+                      }}>{bt}</span>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="betting-group">
+              <h4>🎲 ประเภทการเล่น</h4>
+              <div className="betting-types">
+                {[
+                  { key: 'all', label: 'ทั้งหมด' },
+                  { key: 'handicap', label: 'Handicap' },
+                  { key: 'over_under', label: 'Over/Under' },
+                  { key: '1x2', label: '1X2' }
+                ].map(opt => (
+                  <label key={opt.key} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.settings.market_types?.includes(opt.key) || false}
+                      onChange={(e) => {
+                        const current = formData.settings.market_types || []
+                        let next
+                        if (opt.key === 'all') {
+                          next = e.target.checked ? ['all'] : []
+                        } else {
+                          const withoutAll = current.filter(v => v !== 'all')
+                          next = e.target.checked
+                            ? [...withoutAll, opt.key]
+                            : withoutAll.filter(v => v !== opt.key)
+                        }
+                        handleSettingsChange('market_types', next)
+                      }}
+                    />
+                    <span className="checkbox-text">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.market_types && <span className="error-text">{errors.market_types}</span>}
+              {Array.isArray(formData.settings.market_types) && (
+                <div style={{ marginTop: '8px' }}>
+                  <span style={{ color: '#fff', opacity: 0.9 }}>เลือกแล้ว: </span>
+                  {formData.settings.market_types.length === 0 ? (
+                    <span style={{ color: '#ffd700' }}>— ไม่เลือก (จะส่งเป็น ['all'] ตอนบันทึก)</span>
+                  ) : (
+                    formData.settings.market_types.map(mt => (
+                      <span key={mt} style={{
+                        display: 'inline-block',
+                        background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(184, 134, 11, 0.1))',
+                        border: '1px solid rgba(255, 215, 0, 0.4)',
+                        color: '#fff',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        marginRight: '8px',
+                        marginTop: '6px',
+                        fontSize: '0.85rem'
+                      }}>{mt}</span>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="betting-time-section">
+            <h4>⏱️ ช่วงเวลาการแข่งขัน</h4>
             <div className="betting-types">
               <label className="checkbox-label">
                 <input
                   type="checkbox"
-                  checked={formData.settings.betting_types?.includes('football') || false}
-                  onChange={(e) => handleBettingTypeChange('football', e.target.checked)}
+                  checked={formData.settings.match_periods?.includes('full_time') || false}
+                  onChange={(e) => {
+                    const current = formData.settings.match_periods || []
+                    let next
+                    if (e.target.checked) {
+                      next = [...current, 'full_time']
+                    } else {
+                      next = current.filter(p => p !== 'full_time')
+                    }
+                    handleSettingsChange('match_periods', next)
+                  }}
                 />
-                <span className="checkbox-text">⚽ ฟุตบอล</span>
+                <span className="checkbox-text">⏰ เต็มเวลา</span>
               </label>
               <label className="checkbox-label">
                 <input
                   type="checkbox"
-                  checked={formData.settings.betting_types?.includes('boxing') || false}
-                  onChange={(e) => handleBettingTypeChange('boxing', e.target.checked)}
+                  checked={formData.settings.match_periods?.includes('first_half') || false}
+                  onChange={(e) => {
+                    const current = formData.settings.match_periods || []
+                    let next
+                    if (e.target.checked) {
+                      next = [...current, 'first_half']
+                    } else {
+                      next = current.filter(p => p !== 'first_half')
+                    }
+                    handleSettingsChange('match_periods', next)
+                  }}
                 />
-                <span className="checkbox-text">🥊 มวย</span>
+                <span className="checkbox-text">🥅 ครึ่งแรก</span>
               </label>
               <label className="checkbox-label">
                 <input
                   type="checkbox"
-                  checked={formData.settings.betting_types?.includes('all') || false}
-                  onChange={(e) => handleBettingTypeChange('all', e.target.checked)}
+                  checked={formData.settings.match_periods?.includes('second_half') || false}
+                  onChange={(e) => {
+                    const current = formData.settings.match_periods || []
+                    let next
+                    if (e.target.checked) {
+                      next = [...current, 'second_half']
+                    } else {
+                      next = current.filter(p => p !== 'second_half')
+                    }
+                    handleSettingsChange('match_periods', next)
+                  }}
                 />
-                <span className="checkbox-text">🎯 ทั้งหมด</span>
+                <span className="checkbox-text">🥅 ครึ่งหลัง</span>
               </label>
             </div>
-            {errors.betting_types && <span className="error-text">{errors.betting_types}</span>}
+            <div className="field-note">
+              ⏱️ หมายเหตุ: ช่วงเวลาของการแข่งขันที่ใช้ได้ (ไม่เลือก = ใช้ได้ทุกช่วงเวลา)
+            </div>
           </div>
         </div>
 
-        <div className="form-row">
-          <div className="form-group checkbox-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                name="is_active"
-                checked={formData.is_active}
-                onChange={handleInputChange}
-              />
-              <span className="checkbox-text">ใช้งาน</span>
-            </label>
-          </div>
-          
-          <div className="form-group checkbox-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                name="is_stackable"
-                checked={formData.is_stackable}
-                onChange={handleInputChange}
-              />
-              <span className="checkbox-text">รวมกับโปรโมชั่นอื่นได้</span>
-            </label>
+        <div className="form-section settings-section">
+          <h4>⚙️ การตั้งค่าโปรโมชั่น</h4>
+          <div className="settings-toggles">
+            <div className="toggle-group compact">
+              <div className="toggle-item compact">
+                <label className="toggle-label compact">
+                  <input
+                    type="checkbox"
+                    name="is_active"
+                    checked={formData.is_active}
+                    onChange={handleInputChange}
+                    className="toggle-input"
+                  />
+                  <span className="toggle-slider compact"></span>
+                  <div className="toggle-content compact">
+                    <div className="toggle-icon compact">🟢</div>
+                    <div className="toggle-text compact">
+                      <span className="toggle-title compact">เปิดใช้งาน</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+              
+              <div className="toggle-item compact">
+                <label className="toggle-label compact">
+                  <input
+                    type="checkbox"
+                    name="is_stackable"
+                    checked={formData.is_stackable}
+                    onChange={handleInputChange}
+                    className="toggle-input"
+                  />
+                  <span className="toggle-slider compact"></span>
+                  <div className="toggle-content compact">
+                    <div className="toggle-icon compact">🔗</div>
+                    <div className="toggle-text compact">
+                      <span className="toggle-title compact">รวมกับโปรโมชั่นอื่นได้</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -834,113 +939,161 @@ function PromotionForm({ type, initialData, onSubmit, isEdit = false }) {
       {getTypeSpecificFields()}
 
       <div className="form-section">
-        <h3>ขีดจำกัดผู้ใช้</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="user_limit_total">จำนวนครั้งรวมต่อผู้ใช้</label>
-            <input
-              type="number"
-              id="user_limit_total"
-              name="user_limit_total"
-              min="0"
-              value={formData.user_limit_total}
-              onChange={handleInputChange}
-              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
-            />
+        <h3>⚙️ ขีดจำกัดและข้อกำหนด</h3>
+        
+        <div className="tabs-container">
+          <div className="tabs-header">
+            <button 
+              type="button" 
+              className={`tab-btn ${formData.activeTab === 'global' ? 'active' : ''}`}
+              onClick={() => setFormData(prev => ({ ...prev, activeTab: 'global' }))}
+            >
+              📊 ระบบ
+            </button>
+            <button 
+              type="button" 
+              className={`tab-btn ${formData.activeTab === 'payout' ? 'active' : ''}`}
+              onClick={() => setFormData(prev => ({ ...prev, activeTab: 'payout' }))}
+            >
+              💰 การจ่าย
+            </button>
+            <button 
+              type="button" 
+              className={`tab-btn ${formData.activeTab === 'user' ? 'active' : ''}`}
+              onClick={() => setFormData(prev => ({ ...prev, activeTab: 'user' }))}
+            >
+              👤 ผู้ใช้
+            </button>
           </div>
           
-          <div className="form-group">
-            <label htmlFor="user_limit_per_day">จำนวนครั้งต่อวันต่อผู้ใช้</label>
-            <input
-              type="number"
-              id="user_limit_per_day"
-              name="user_limit_per_day"
-              min="0"
-              value={formData.user_limit_per_day}
-              onChange={handleInputChange}
-              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="form-section">
-        <h3>ขีดจำกัดรวม</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="global_quota">โควต้าทั้งหมด</label>
-            <input
-              type="number"
-              id="global_quota"
-              name="global_quota"
-              min="0"
-              value={formData.global_quota}
-              onChange={handleInputChange}
-              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="global_budget">งบประมาณรวม (บาท)</label>
-            <input
-              type="number"
-              id="global_budget"
-              name="global_budget"
-              min="0"
-              step="0.01"
-              value={formData.global_budget}
-              onChange={handleInputChange}
-              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="form-section">
-        <h3>ขีดจำกัดการจ่าย</h3>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="max_payout_per_bill">สูงสุดต่อบิล (บาท)</label>
-            <input
-              type="number"
-              id="max_payout_per_bill"
-              name="max_payout_per_bill"
-              min="0"
-              step="0.01"
-              value={formData.max_payout_per_bill}
-              onChange={handleInputChange}
-              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="max_payout_per_day">สูงสุดต่อวัน (บาท)</label>
-            <input
-              type="number"
-              id="max_payout_per_day"
-              name="max_payout_per_day"
-              min="0"
-              step="0.01"
-              value={formData.max_payout_per_day}
-              onChange={handleInputChange}
-              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
-            />
+          <div className="tab-content">
+            {formData.activeTab === 'user' && (
+              <div className="tab-panel">
+        <div className="form-group">
+          <label htmlFor="user_limit_total">จำนวนครั้งรวมต่อผู้ใช้</label>
+          <input
+            type="number"
+            id="user_limit_total"
+            name="user_limit_total"
+            min="0"
+            value={formData.user_limit_total}
+            onChange={handleInputChange}
+            placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
+          />
+          <div className="field-note">
+            🔢 หมายเหตุ: ผู้ใช้สามารถใช้โปรโมชั่นนี้ได้กี่รอบ
           </div>
         </div>
         
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="max_payout_per_user">สูงสุดต่อผู้ใช้ (บาท)</label>
-            <input
-              type="number"
-              id="max_payout_per_user"
-              name="max_payout_per_user"
-              min="0"
-              step="0.01"
-              value={formData.max_payout_per_user}
-              onChange={handleInputChange}
-              placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
-            />
+        <div className="form-group">
+          <label htmlFor="user_limit_per_day">จำนวนครั้งต่อวันต่อผู้ใช้</label>
+          <input
+            type="number"
+            id="user_limit_per_day"
+            name="user_limit_per_day"
+            min="0"
+            value={formData.user_limit_per_day}
+            onChange={handleInputChange}
+            placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
+          />
+          <div className="field-note">
+            📊 หมายเหตุ: ในหนึ่งวันสามารถใช้ได้กี่รอบ
+          </div>
+        </div>
+              </div>
+            )}
+            
+            {formData.activeTab === 'global' && (
+              <div className="tab-panel">
+                <div className="form-group">
+                  <label htmlFor="global_quota">โควต้าทั้งหมด</label>
+                  <input
+                    type="number"
+                    id="global_quota"
+                    name="global_quota"
+                    min="0"
+                    value={formData.global_quota}
+                    onChange={handleInputChange}
+                    placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
+                  />
+                  <div className="field-note">
+                    💡 หมายเหตุ: สิทธิในการใช้โปรโมชั่นนี้มีกี่สิทธิ
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="global_budget">งบประมาณรวม (บาท)</label>
+                  <input
+                    type="number"
+                    id="global_budget"
+                    name="global_budget"
+                    min="0"
+                    step="0.01"
+                    value={formData.global_budget}
+                    onChange={handleInputChange}
+                    placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
+                  />
+                  <div className="field-note">
+                    💰 หมายเหตุ: จำนวนเงินที่จะให้กับโปรโมชั่นนี้
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {formData.activeTab === 'payout' && (
+              <div className="tab-panel">
+                <div className="form-group">
+                  <label htmlFor="max_payout_per_bill">สูงสุดต่อบิล (บาท)</label>
+                  <input
+                    type="number"
+                    id="max_payout_per_bill"
+                    name="max_payout_per_bill"
+                    min="0"
+                    step="0.01"
+                    value={formData.max_payout_per_bill}
+                    onChange={handleInputChange}
+                    placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
+                  />
+                  <div className="field-note">
+                    💳 หมายเหตุ: จ่ายต่อบิล
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="max_payout_per_day">สูงสุดต่อวัน (บาท)</label>
+                  <input
+                    type="number"
+                    id="max_payout_per_day"
+                    name="max_payout_per_day"
+                    min="0"
+                    step="0.01"
+                    value={formData.max_payout_per_day}
+                    onChange={handleInputChange}
+                    placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
+                  />
+                  <div className="field-note">
+                    📅 หมายเหตุ: ต่อวันของโปรโมชั่น
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="max_payout_per_user">สูงสุดต่อผู้ใช้ (บาท)</label>
+                  <input
+                    type="number"
+                    id="max_payout_per_user"
+                    name="max_payout_per_user"
+                    min="0"
+                    step="0.01"
+                    value={formData.max_payout_per_user}
+                    onChange={handleInputChange}
+                    placeholder="ปล่อยว่างไว้สำหรับไม่จำกัด"
+                  />
+                  <div className="field-note">
+                    👤 หมายเหตุ: จ่ายให้ต่อผู้ใช้
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
