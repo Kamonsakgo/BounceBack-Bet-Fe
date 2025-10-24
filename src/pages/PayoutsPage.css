@@ -1,0 +1,107 @@
+/* Payouts Page Styles */
+.payouts-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+  padding: 24px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(255, 215, 0, 0.2), inset 0 1px 0 rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.header-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffd700;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.header-content p {
+  color: #e5e7eb;
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000000;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s;
+  border: 1px solid rgba(255, 215, 0, 0.8);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.back-btn:hover {
+  background: linear-gradient(135deg, #ffff00, #ffd700);
+  color: #000000;
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+}
+
+.page-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .payouts-page {
+    padding: 16px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+    padding: 20px;
+  }
+  
+  .header-content h1 {
+    font-size: 1.5rem;
+  }
+  
+  .header-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .payouts-page {
+    padding: 12px;
+  }
+  
+  .page-header {
+    padding: 16px;
+  }
+  
+  .header-content h1 {
+    font-size: 1.25rem;
+  }
+  
+  .header-content p {
+    font-size: 0.9rem;
+  }
+}

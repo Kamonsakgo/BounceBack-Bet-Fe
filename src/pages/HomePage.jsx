@@ -99,9 +99,14 @@ function HomePage() {
           <h2>จัดการโปรโมชั่น</h2>
           <p>จัดการโปรโมชั่นและโบนัสการเดิมพันของคุณ</p>
         </div>
-        <Link to="/add-promotion" className="add-promotion-btn">
-          <span>+</span> เพิ่มโปรโมชั่นใหม่
-        </Link>
+        <div className="header-actions">
+          <Link to="/add-promotion" className="add-promotion-btn">
+            <span>+</span> เพิ่มโปรโมชั่นใหม่
+          </Link>
+          <Link to="/payouts" className="payouts-btn">
+            💰 การจ่ายเงิน
+          </Link>
+        </div>
       </div>
 
       <div className="filters">

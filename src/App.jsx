@@ -4,6 +4,7 @@ import AddPromotionPage from './pages/AddPromotionPage'
 import EditPromotionPage from './pages/EditPromotionPage'
 import PromotionDetailPage from './pages/PromotionDetailPage'
 import TestPromotionPage from './pages/TestPromotionPage'
+import PayoutsPage from './pages/PayoutsPage'
 import './App.css'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
                 <Link to="/" className="nav-link">หน้าแรก</Link>
                 <Link to="/add-promotion" className="nav-link">เพิ่มโปรโมชั่น</Link>
                 <Link to="/test-promotion" className="nav-link">ทดสอบโปรโมชั่น</Link>
+                <Link to="/payouts" className="nav-link">การจ่ายเงิน</Link>
               </nav>
         </header>
 
@@ -28,6 +30,7 @@ function App() {
               <Route path="/edit-promotion/:id" element={<EditPromotionPage />} />
               <Route path="/test-promotion" element={<TestPromotionPage />} />
               <Route path="/promotion/:id" element={<PromotionDetailPage />} />
+              <Route path="/payouts" element={<PayoutsPage />} />
             </Routes>
         </main>
       </div>

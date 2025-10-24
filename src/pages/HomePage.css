@@ -15,6 +15,12 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 215, 0, 0.1);
 }
 
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 .header-content h2 {
   font-size: 2rem;
   margin: 0 0 0.5rem 0;
@@ -48,6 +54,23 @@
   letter-spacing: 0.5px;
 }
 
+.payouts-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.4rem 2.5rem;
+  background: linear-gradient(135deg, #10b981, #34d399, #059669, #10b981);
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 20px;
+  font-weight: 700;
+  transition: all 0.5s ease;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+  border: 3px solid rgba(16, 185, 129, 0.8);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
+}
+
 .add-promotion-btn:hover {
   transform: translateY(-6px);
   box-shadow: 0 16px 40px rgba(255, 215, 0, 0.5);
@@ -55,6 +78,14 @@
   border-color: rgba(255, 215, 0, 1);
   color: #000000;
   text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.payouts-btn:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #34d399, #10b981, #047857, #34d399);
+  border: 3px solid rgba(16, 185, 129, 1);
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
 }
 
 .add-promotion-btn span {
@@ -250,6 +281,18 @@
     text-align: center;
   }
   
+  .header-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+  
+  .add-promotion-btn,
+  .payouts-btn {
+    padding: 1rem 2rem;
+    font-size: 0.9rem;
+  }
+  
   .filters {
     flex-direction: column;
     gap: 1rem;
@@ -261,5 +304,17 @@
   
   .promotions-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    gap: 0.5rem;
+  }
+  
+  .add-promotion-btn,
+  .payouts-btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 0.85rem;
   }
 }

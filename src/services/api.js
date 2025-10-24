@@ -108,6 +108,36 @@ class ApiService {
       throw error
     }
   }
+
+  // Get all promotion payouts
+  async getPromotionPayouts(userId = null) {
+    try {
+      let endpoint = API_CONFIG.ENDPOINTS.PROMOTION_PAYOUTS
+      if (userId) {
+        endpoint += `?user_id=${userId}`
+      }
+      const response = await this.request(endpoint)
+      return response
+    } catch (error) {
+      console.error('Failed to fetch promotion payouts:', error)
+      throw error
+    }
+  }
+
+  // Get promotion payouts by promotion ID
+  async getPromotionPayoutsByPromotion(promotionId, userId = null) {
+    try {
+      let endpoint = `${API_CONFIG.ENDPOINTS.PROMOTION_PAYOUTS}/promotion/${promotionId}`
+      if (userId) {
+        endpoint += `?user_id=${userId}`
+      }
+      const response = await this.request(endpoint)
+      return response
+    } catch (error) {
+      console.error(`Failed to fetch payouts for promotion ${promotionId}:`, error)
+      throw error
+    }
+  }
 }
 
 // Create and export a singleton instance
