@@ -1,9 +1,7 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './PromotionCard.css'
 
 function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }) {
-  const [isExpanded, setIsExpanded] = useState(false)
   const navigate = useNavigate()
 
   const handleEdit = () => {
@@ -81,31 +79,27 @@ function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }
   return (
     <div className="promotion-card">
       <div className="card-header">
-        <div className="card-title">
+        <div className="card-title-section">
           <h3>{promotion.name}</h3>
-          {getStatusBadge(promotion.is_active)}
         </div>
-        <div className="card-actions">
-          <button 
-            className="edit-btn"
-            onClick={handleEdit}
-            title="แก้ไขโปรโมชั่น"
-          >
-            ✏️
-          </button>
-          <button 
-            className="expand-btn"
-            onClick={handleView}
-            title="ดูรายละเอียด"
-          >
-            👁️
-          </button>
-          <button 
-            className="expand-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? '−' : '+'}
-          </button>
+        <div className="card-status-section">
+          {getStatusBadge(promotion.is_active)}
+          <div className="card-actions">
+            <button 
+              className="edit-btn"
+              onClick={handleEdit}
+              title="แก้ไขโปรโมชั่น"
+            >
+              ✏️
+            </button>
+            <button 
+              className="expand-btn"
+              onClick={handleView}
+              title="ดูรายละเอียด"
+            >
+              👁️
+            </button>
+          </div>
         </div>
       </div>
 
@@ -134,126 +128,6 @@ function PromotionCard({ promotion, formatDate, formatCurrency, getStatusBadge }
           </div>
         </div>
 
-        {isExpanded && (
-          <div className="expanded-info">
-            <div className="info-section">
-              <h4>ขีดจำกัดผู้ใช้</h4>
-              <div className="info-grid">
-                <div className="info-item">
-                  <span className="label">รวมต่อผู้ใช้:</span>
-                  <span>{promotion.user_limit_total || 'ไม่จำกัด'}</span>
-                </div>
-                <div className="info-item">
-                  <span className="label">ต่อวันต่อผู้ใช้:</span>
-                  <span>{promotion.user_limit_per_day || 'ไม่จำกัด'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="info-section">
-              <h4>ขีดจำกัดรวม</h4>
-              <div className="info-grid">
-                <div className="info-item">
-                  <span className="label">โควต้าทั้งหมด:</span>
-                  <span>{promotion.global_quota?.toLocaleString() || 'ไม่จำกัด'}</span>
-                </div>
-                <div className="info-item">
-                  <span className="label">งบประมาณรวม:</span>
-                  <span>{promotion.global_budget ? formatCurrency(promotion.global_budget) : 'ไม่จำกัด'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="info-section">
-              <h4>ขีดจำกัดการจ่าย</h4>
-              <div className="info-grid">
-                <div className="info-item">
-                  <span className="label">สูงสุดต่อบิล:</span>
-                  <span>{promotion.max_payout_per_bill ? formatCurrency(promotion.max_payout_per_bill) : 'ไม่จำกัด'}</span>
-                </div>
-                <div className="info-item">
-                  <span className="label">สูงสุดต่อวัน:</span>
-                  <span>{promotion.max_payout_per_day ? formatCurrency(promotion.max_payout_per_day) : 'ไม่จำกัด'}</span>
-                </div>
-                <div className="info-item">
-                  <span className="label">สูงสุดต่อผู้ใช้:</span>
-                  <span>{promotion.max_payout_per_user ? formatCurrency(promotion.max_payout_per_user) : 'ไม่จำกัด'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="info-section">
-              <h4>การตั้งค่า</h4>
-              <div className="settings-info">
-                {getSettingsInfo(promotion.settings, promotion.type)}
-              </div>
-            </div>
-
-            {(() => {
-              const settings = parseSettings(promotion.settings)
-              return settings?.betting_types && settings.betting_types.length > 0
-            })() && (
-              <div className="info-section">
-                <h4>ประเภทกีฬา</h4>
-                <div className="betting-types-display">
-                  {(() => {
-                    const settings = parseSettings(promotion.settings)
-                    const order = { 'all': 0, 'football': 1, 'boxing': 2 }
-                    const types = (settings.betting_types || []).slice().sort((a, b) => (order[a] ?? 99) - (order[b] ?? 99))
-                    return types.map(type => {
-                    const typeInfo = {
-                      'football': '⚽ ฟุตบอล',
-                      'boxing': '🥊 มวย',
-                      'all': '🎯 ทั้งหมด'
-                    }
-                    return (
-                      <span key={type} className="betting-type-tag">
-                        {typeInfo[type] || type}
-                      </span>
-                    )
-                    })
-                  })()}
-                </div>
-              </div>
-            )}
-
-            {(() => {
-              const settings = parseSettings(promotion.settings)
-              return settings?.market_types && settings.market_types.length > 0
-            })() && (
-              <div className="info-section">
-                <h4>ประเภทการเดิมพัน</h4>
-                <div className="betting-types-display">
-                  {(() => {
-                    const settings = parseSettings(promotion.settings)
-                    const order = { 'all': 0, 'handicap': 1, 'over_under': 2, '1x2': 3 }
-                    const labels = { 'all': 'ทั้งหมด', 'handicap': 'แฮนดิแคป', 'over_under': 'สูง/ต่ำ', '1x2': '1X2' }
-                    const types = (settings.market_types || []).slice().sort((a, b) => (order[a] ?? 99) - (order[b] ?? 99))
-                    return types.map(mt => (
-                      <span key={mt} className="betting-type-tag">
-                        {labels[mt] || mt}
-                      </span>
-                    ))
-                  })()}
-                </div>
-              </div>
-            )}
-
-            <div className="info-section">
-              <h4>เวลาสร้างและแก้ไข</h4>
-              <div className="info-grid">
-                <div className="info-item">
-                  <span className="label">สร้างเมื่อ:</span>
-                  <span>{formatDate(promotion.created_at)}</span>
-                </div>
-                <div className="info-item">
-                  <span className="label">แก้ไขเมื่อ:</span>
-                  <span>{formatDate(promotion.updated_at)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
