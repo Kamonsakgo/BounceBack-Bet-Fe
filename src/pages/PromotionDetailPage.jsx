@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import apiService from '../services/api'
-import './AddPromotionPage.css'
+import './PromotionDetailPage.css'
 
 function PromotionDetailPage() {
   const { id } = useParams()
@@ -35,7 +35,7 @@ function PromotionDetailPage() {
 
   if (loading) {
     return (
-      <div className="add-promotion-page">
+      <div className="promotion-detail-page">
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <p>กำลังโหลดข้อมูลโปรโมชั่น...</p>
@@ -46,7 +46,7 @@ function PromotionDetailPage() {
 
   if (error || !data) {
     return (
-      <div className="add-promotion-page">
+      <div className="promotion-detail-page">
         <div className="error-container">
           <h2>เกิดข้อผิดพลาด</h2>
           <p>{error || 'ไม่พบข้อมูลโปรโมชั่น'}</p>
@@ -66,11 +66,13 @@ function PromotionDetailPage() {
   const currency = (v) => v == null ? 'ไม่จำกัด' : new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(v)
 
   return (
-    <div className="add-promotion-page">
+    <div className="promotion-detail-page">
       <div className="page-header">
         <button className="back-btn" onClick={() => navigate('/')}>← กลับ</button>
-        <h2>รายละเอียดโปรโมชั่น: {data.name}</h2>
-        <p>ดูข้อมูลทั้งหมดในหน้าเดียว</p>
+        <div>
+          <h2>รายละเอียดโปรโมชั่น: {data.name}</h2>
+          <p>ดูข้อมูลทั้งหมดในหน้าเดียว</p>
+        </div>
       </div>
 
       <div className="form-container">
@@ -109,7 +111,10 @@ function PromotionDetailPage() {
               <div style={{ marginTop: 12 }}>
                 <strong>ประเภทกีฬา</strong>
                 <div className="betting-types-display" style={{ marginTop: 6 }}>
-                  {betTypes.map((t) => (<span key={t} className="betting-type-tag">{t}</span>))}
+                  {betTypes.map((t) => {
+                    const labels = { 'all': '🎯 ทั้งหมด', 'football': '⚽ ฟุตบอล', 'boxing': '🥊 มวย' }
+                    return <span key={t} className="betting-type-tag">{labels[t] || t}</span>
+                  })}
                 </div>
               </div>
             )}
@@ -117,20 +122,48 @@ function PromotionDetailPage() {
               <div style={{ marginTop: 12 }}>
                 <strong>ประเภทการเดิมพัน</strong>
                 <div className="betting-types-display" style={{ marginTop: 6 }}>
-                  {marketTypes.map((t) => (<span key={t} className="betting-type-tag">{t}</span>))}
+                  {marketTypes.map((t) => {
+                    const labels = { 'all': 'ทั้งหมด', 'handicap': 'แฮนดิแคป', 'over_under': 'สูง/ต่ำ', '1x2': '1X2' }
+                    return <span key={t} className="betting-type-tag">{labels[t] || t}</span>
+                  })}
+                </div>
+              </div>
+            )}
+            {settings.match_periods && settings.match_periods.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <strong>ช่วงเวลาการแข่งขัน</strong>
+                <div className="betting-types-display" style={{ marginTop: 6 }}>
+                  {settings.match_periods.map((period) => {
+                    const labels = { 'first_half': 'ครึ่งแรก', 'second_half': 'ครึ่งหลัง', 'full_time': 'เต็มเวลา', 'all': 'ทุกช่วงเวลา' }
+                    return <span key={period} className="betting-type-tag">{labels[period] || period}</span>
+                  })}
                 </div>
               </div>
             )}
           </div>
 
           <div className="form-section">
-            <h3>ขีดจำกัด</h3>
+            <h3>ขีดจำกัดผู้ใช้</h3>
+            <div className="info-grid">
+              <div className="info-item"><strong>รวมต่อผู้ใช้</strong><div>{data.user_limit_total || 'ไม่จำกัด'}</div></div>
+              <div className="info-item"><strong>ต่อวันต่อผู้ใช้</strong><div>{data.user_limit_per_day || 'ไม่จำกัด'}</div></div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h3>ขีดจำกัดรวม</h3>
+            <div className="info-grid">
+              <div className="info-item"><strong>โควต้ารวม</strong><div>{data.global_quota ?? 'ไม่จำกัด'}</div></div>
+              <div className="info-item"><strong>งบประมาณรวม</strong><div>{currency(data.global_budget)}</div></div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h3>ขีดจำกัดการจ่าย</h3>
             <div className="info-grid">
               <div className="info-item"><strong>สูงสุดต่อบิล</strong><div>{currency(data.max_payout_per_bill)}</div></div>
               <div className="info-item"><strong>สูงสุดต่อวัน</strong><div>{currency(data.max_payout_per_day)}</div></div>
               <div className="info-item"><strong>สูงสุดต่อผู้ใช้</strong><div>{currency(data.max_payout_per_user)}</div></div>
-              <div className="info-item"><strong>โควต้ารวม</strong><div>{data.global_quota ?? 'ไม่จำกัด'}</div></div>
-              <div className="info-item"><strong>งบประมาณรวม</strong><div>{currency(data.global_budget)}</div></div>
             </div>
           </div>
 
@@ -140,6 +173,16 @@ function PromotionDetailPage() {
               <div className="info-item"><strong>วันในสัปดาห์</strong><div>{data.schedule_days && data.schedule_days !== '[]' ? data.schedule_days : 'ทุกวัน'}</div></div>
               <div className="info-item"><strong>เวลาเริ่ม</strong><div>{data.schedule_start_time ?? '—'}</div></div>
               <div className="info-item"><strong>เวลาสิ้นสุด</strong><div>{data.schedule_end_time ?? '—'}</div></div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h3>ข้อมูลเพิ่มเติม</h3>
+            <div className="info-grid">
+              <div className="info-item"><strong>รวมกันได้</strong><div>{data.is_stackable ? 'ใช่' : 'ไม่'}</div></div>
+              <div className="info-item"><strong>สร้างเมื่อ</strong><div>{fmtDate(data.created_at)}</div></div>
+              <div className="info-item"><strong>แก้ไขเมื่อ</strong><div>{fmtDate(data.updated_at)}</div></div>
+              {data.deleted_at && <div className="info-item"><strong>ลบเมื่อ</strong><div>{fmtDate(data.deleted_at)}</div></div>}
             </div>
           </div>
 
